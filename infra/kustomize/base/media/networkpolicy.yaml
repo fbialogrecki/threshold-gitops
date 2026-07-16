@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: media-ingress-from-web
+  labels:
+    app.kubernetes.io/name: media
+    app.kubernetes.io/part-of: threshold
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: media
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: web
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: users
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: social
+      ports:
+        - protocol: TCP
+          port: 8000

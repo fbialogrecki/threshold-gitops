@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: media-migrate
+  labels:
+    app.kubernetes.io/name: media
+    app.kubernetes.io/component: migration
+    app.kubernetes.io/part-of: threshold
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: media
+        app.kubernetes.io/component: migration
+        app.kubernetes.io/part-of: threshold
+    spec:
+      restartPolicy: Never
+      serviceAccountName: media
+      containers:
+        - name: migrate
+          image: threshold/media:dev
+          imagePullPolicy: IfNotPresent
+          workingDir: /app/services/media
+          command: ["uv", "run", "alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: media-config
+            - secretRef:
+                name: media-secrets
+            - secretRef:
+                name: media-s3
+          env:
+            - name: THRESHOLD_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: media-postgres-app
+                  key: uri

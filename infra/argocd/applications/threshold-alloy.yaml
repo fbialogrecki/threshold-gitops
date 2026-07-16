@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-alloy
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-alloy
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: observability
+spec:
+  project: platform
+  sources:
+    # releaseName must stay "alloy" and targetRevision pinned to the installed
+    # chart version: this adopts the live helm release instead of duplicating it.
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 1.8.2
+      helm:
+        releaseName: alloy
+        valueFiles:
+          - $values/infra/helm/alloy/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

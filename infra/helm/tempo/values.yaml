@@ -1,0 +1,34 @@
+# NUC-sized Tempo values for Threshold observability MVP.
+# Render target: grafana/tempo.
+
+tempo:
+  retention: 336h # 14 days
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+  metricsGenerator:
+    enabled: false
+
+persistence:
+  enabled: true
+  storageClassName: local-path
+  size: 20Gi
+
+service:
+  type: ClusterIP

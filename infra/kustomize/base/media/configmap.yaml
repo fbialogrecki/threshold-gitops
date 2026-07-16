@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: media-config
+  labels:
+    app.kubernetes.io/name: media
+    app.kubernetes.io/part-of: threshold
+data:
+  THRESHOLD_ENVIRONMENT: local
+  THRESHOLD_SERVICE_NAME: media
+  OTEL_SERVICE_NAME: media
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability.svc.cluster.local:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: otlp
+  OTEL_LOGS_EXPORTER: otlp
+  OTEL_PYTHON_LOG_CORRELATION: "true"
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.namespace=threshold

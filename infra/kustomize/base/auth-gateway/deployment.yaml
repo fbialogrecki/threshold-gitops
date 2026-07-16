@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-gateway
+  labels:
+    app.kubernetes.io/name: auth-gateway
+    app.kubernetes.io/part-of: threshold
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: auth-gateway
+        app.kubernetes.io/part-of: threshold
+    spec:
+      serviceAccountName: auth-gateway
+      containers:
+        - name: auth-gateway
+          image: threshold/auth-gateway:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: auth-gateway-config
+            - secretRef:
+                name: auth-gateway-secrets
+                optional: true
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

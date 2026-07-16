@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-node-exporter
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-node-exporter
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: observability
+spec:
+  project: platform
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-node-exporter
+      targetRevision: 4.55.0
+      helm:
+        releaseName: node-exporter
+        valueFiles:
+          - $values/infra/helm/node-exporter/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

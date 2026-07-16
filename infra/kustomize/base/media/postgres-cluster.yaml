@@ -1,0 +1,50 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: media-postgres
+  labels:
+    app.kubernetes.io/name: media-postgres
+    app.kubernetes.io/component: postgres
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/managed-by: argocd
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+  enablePDB: true
+  enableSuperuserAccess: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  bootstrap:
+    initdb:
+      database: threshold_media
+      owner: media
+      encoding: UTF8
+      localeCollate: C
+      localeCType: C
+  storage:
+    size: 5Gi
+    storageClass: threshold-postgres-local
+    resizeInUseVolumes: true
+  monitoring:
+    disableDefaultQueries: false
+    enablePodMonitor: false
+    customQueriesConfigMap:
+      - name: cnpg-default-monitoring
+        key: queries
+  postgresql:
+    parameters:
+      wal_level: logical
+      wal_keep_size: 512MB
+      wal_log_hints: "on"
+      full_page_writes: "on"
+      archive_timeout: 5min
+      max_replication_slots: "32"
+      max_worker_processes: "32"
+      max_parallel_workers: "32"
+      ssl_min_protocol_version: TLSv1.3
+      ssl_max_protocol_version: TLSv1.3
+      shared_preload_libraries: ""

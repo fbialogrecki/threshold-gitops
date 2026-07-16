@@ -1,0 +1,252 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cnpg-backup-exporter
+  labels:
+    app.kubernetes.io/name: cnpg-backup-exporter
+    app.kubernetes.io/component: backup-monitoring
+    app.kubernetes.io/part-of: threshold
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cnpg-backup-exporter
+  labels:
+    app.kubernetes.io/name: cnpg-backup-exporter
+    app.kubernetes.io/component: backup-monitoring
+    app.kubernetes.io/part-of: threshold
+rules:
+  - apiGroups:
+      - postgresql.cnpg.io
+    resources:
+      - backups
+      - scheduledbackups
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cnpg-backup-exporter
+  labels:
+    app.kubernetes.io/name: cnpg-backup-exporter
+    app.kubernetes.io/component: backup-monitoring
+    app.kubernetes.io/part-of: threshold
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cnpg-backup-exporter
+subjects:
+  - kind: ServiceAccount
+    name: cnpg-backup-exporter
+    namespace: observability
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cnpg-backup-exporter
+  labels:
+    app.kubernetes.io/name: cnpg-backup-exporter
+    app.kubernetes.io/component: backup-monitoring
+    app.kubernetes.io/part-of: threshold
+data:
+  exporter.py: |
+    import datetime
+    import json
+    import os
+    import ssl
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    API = "https://kubernetes.default.svc"
+    TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    CA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    WATCH_NAMESPACE = os.environ.get("WATCH_NAMESPACE", "threshold")
+
+    def ts(value):
+      if not value:
+        return 0
+      return int(datetime.datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp())
+
+    def label(value):
+      return str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+    def api_get(path):
+      with open(TOKEN_PATH, "r", encoding="utf-8") as fh:
+        token = fh.read().strip()
+      ctx = ssl.create_default_context(cafile=CA_PATH)
+      req = urllib.request.Request(
+        API + path,
+        headers={"Authorization": "Bearer " + token, "Accept": "application/json"},
+      )
+      with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+    def metric(name, labels, value):
+      rendered = ",".join(f'{k}="{label(v)}"' for k, v in labels.items())
+      return f"{name}{{{rendered}}} {value}"
+
+    def collect():
+      scheduled = api_get(f"/apis/postgresql.cnpg.io/v1/namespaces/{WATCH_NAMESPACE}/scheduledbackups")["items"]
+      backups = api_get(f"/apis/postgresql.cnpg.io/v1/namespaces/{WATCH_NAMESPACE}/backups")["items"]
+
+      completed_any = {}
+      completed_scheduled = {}
+      for item in backups:
+        status = item.get("status", {})
+        if status.get("phase") != "completed":
+          continue
+        spec = item.get("spec", {})
+        metadata = item.get("metadata", {})
+        cluster = spec.get("cluster", {}).get("name") or metadata.get("labels", {}).get("cnpg.io/cluster")
+        started = ts(status.get("startedAt") or metadata.get("creationTimestamp"))
+        if not cluster or not started:
+          continue
+        completed_any[cluster] = max(completed_any.get(cluster, 0), started)
+        scheduled_name = metadata.get("labels", {}).get("cnpg.io/scheduled-backup")
+        if scheduled_name:
+          key = (cluster, scheduled_name)
+          completed_scheduled[key] = max(completed_scheduled.get(key, 0), started)
+
+      lines = [
+        "# HELP threshold_cnpg_scheduled_backup_created_timestamp Unix timestamp of the ScheduledBackup object creation time.",
+        "# TYPE threshold_cnpg_scheduled_backup_created_timestamp gauge",
+        "# HELP threshold_cnpg_scheduled_backup_last_schedule_timestamp Unix timestamp of the controller reported last schedule time, or 0 if never scheduled.",
+        "# TYPE threshold_cnpg_scheduled_backup_last_schedule_timestamp gauge",
+        "# HELP threshold_cnpg_last_completed_scheduled_backup_timestamp Unix timestamp of the last completed Backup owned by a ScheduledBackup, or 0 if none.",
+        "# TYPE threshold_cnpg_last_completed_scheduled_backup_timestamp gauge",
+        "# HELP threshold_cnpg_last_completed_any_backup_timestamp Unix timestamp of the last completed Backup for the cluster, including manual restore-gate backups.",
+        "# TYPE threshold_cnpg_last_completed_any_backup_timestamp gauge",
+      ]
+
+      seen_clusters = set()
+      for item in scheduled:
+        metadata = item.get("metadata", {})
+        spec = item.get("spec", {})
+        status = item.get("status", {})
+        scheduled_name = metadata["name"]
+        cluster = spec.get("cluster", {}).get("name", "")
+        seen_clusters.add(cluster)
+        labels = {
+          "cnpg_namespace": WATCH_NAMESPACE,
+          "cluster": cluster,
+          "scheduled_backup": scheduled_name,
+        }
+        lines.append(metric("threshold_cnpg_scheduled_backup_created_timestamp", labels, ts(metadata.get("creationTimestamp"))))
+        lines.append(metric("threshold_cnpg_scheduled_backup_last_schedule_timestamp", labels, ts(status.get("lastScheduleTime"))))
+        lines.append(metric("threshold_cnpg_last_completed_scheduled_backup_timestamp", labels, completed_scheduled.get((cluster, scheduled_name), 0)))
+
+      for cluster in sorted(seen_clusters | set(completed_any)):
+        lines.append(metric("threshold_cnpg_last_completed_any_backup_timestamp", {"cnpg_namespace": WATCH_NAMESPACE, "cluster": cluster}, completed_any.get(cluster, 0)))
+
+      return "\n".join(lines) + "\n"
+
+    class Handler(BaseHTTPRequestHandler):
+      def do_GET(self):
+        if self.path not in ("/metrics", "/"):
+          self.send_response(404)
+          self.end_headers()
+          return
+        try:
+          body = collect().encode("utf-8")
+          self.send_response(200)
+          self.send_header("Content-Type", "text/plain; version=0.0.4")
+          self.send_header("Content-Length", str(len(body)))
+          self.end_headers()
+          self.wfile.write(body)
+        except Exception as exc:
+          body = (f"collector_error {json.dumps(str(exc))}\n").encode("utf-8")
+          self.send_response(500)
+          self.send_header("Content-Type", "text/plain")
+          self.send_header("Content-Length", str(len(body)))
+          self.end_headers()
+          self.wfile.write(body)
+
+      def log_message(self, fmt, *args):
+        return
+
+    if __name__ == "__main__":
+      HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cnpg-backup-exporter
+  labels:
+    app.kubernetes.io/name: cnpg-backup-exporter
+    app.kubernetes.io/component: backup-monitoring
+    app.kubernetes.io/part-of: threshold
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cnpg-backup-exporter
+  template:
+    metadata:
+      annotations:
+        threshold.dev/config-revision: "cnpg-namespace-label"
+      labels:
+        app.kubernetes.io/name: cnpg-backup-exporter
+        app.kubernetes.io/component: backup-monitoring
+        app.kubernetes.io/part-of: threshold
+    spec:
+      serviceAccountName: cnpg-backup-exporter
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          image: python:3.13-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - /app/exporter.py
+          env:
+            - name: WATCH_NAMESPACE
+              value: threshold
+          ports:
+            - name: metrics
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: exporter
+              mountPath: /app
+              readOnly: true
+      volumes:
+        - name: exporter
+          configMap:
+            name: cnpg-backup-exporter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cnpg-backup-exporter
+  labels:
+    app.kubernetes.io/name: cnpg-backup-exporter
+    app.kubernetes.io/component: backup-monitoring
+    app.kubernetes.io/part-of: threshold
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: cnpg-backup-exporter
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: metrics

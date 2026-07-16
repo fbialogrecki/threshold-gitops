@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: social-migrate
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+  labels:
+    app.kubernetes.io/name: social
+    app.kubernetes.io/component: migration
+    app.kubernetes.io/part-of: threshold
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: social
+        app.kubernetes.io/component: migration
+        app.kubernetes.io/part-of: threshold
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: social
+      containers:
+        - name: migrate
+          image: threshold/social:dev
+          imagePullPolicy: IfNotPresent
+          command: ["uv", "run", "python", "-m", "social.migrate"]
+          envFrom:
+            - configMapRef:
+                name: social-config
+            - secretRef:
+                name: social-secrets
+          env:
+            - name: THRESHOLD_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: social-postgres-app
+                  key: uri
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

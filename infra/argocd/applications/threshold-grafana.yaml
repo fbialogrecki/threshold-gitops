@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-grafana
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-grafana
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: observability
+spec:
+  project: platform
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: grafana
+      targetRevision: 10.5.15
+      helm:
+        releaseName: grafana
+        valueFiles:
+          - $values/infra/helm/grafana/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

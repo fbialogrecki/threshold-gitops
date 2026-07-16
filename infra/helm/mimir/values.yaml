@@ -1,0 +1,177 @@
+# NUC-sized Mimir values for Threshold observability MVP.
+# Render target: grafana/mimir-distributed.
+#
+# Reconciled from the live helm release during the 2026-06-13 GitOps adoption:
+# gateway (not nginx), kafka/ingest-storage off, NUC-tuned structuredConfig limits.
+
+alertmanager:
+  enabled: false
+chunks-cache:
+  enabled: false
+compactor:
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+    storageClass: local-path
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+distributor:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+gateway:
+  enabled: true
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+index-cache:
+  enabled: false
+ingester:
+  persistentVolume:
+    enabled: true
+    size: 20Gi
+    storageClass: local-path
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  zoneAwareReplication:
+    enabled: false
+kafka:
+  enabled: false
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+metadata-cache:
+  enabled: false
+mimir:
+  structuredConfig:
+    alertmanager_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/alertmanager
+    blocks_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/blocks
+    compactor:
+      data_dir: /data/compactor
+    distributor:
+      remote_timeout: null
+    ingest_storage:
+      enabled: false
+      kafka:
+        address: null
+        auto_create_topic_default_partitions: null
+        topic: null
+    ingester:
+      push_grpc_method_enabled: null
+      ring:
+        replication_factor: 1
+    limits:
+      compactor_blocks_retention_period: 30d
+      ingestion_burst_size: 200000
+      ingestion_rate: 10000
+      max_fetched_series_per_query: 50000
+      max_global_series_per_metric: 20000
+      max_global_series_per_user: 150000
+      max_label_name_length: 1024
+      max_label_names_per_series: 30
+      max_label_value_length: 2048
+      max_query_lookback: 30d
+      max_query_parallelism: 8
+    multitenancy_enabled: false
+    ruler_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/ruler
+minio:
+  enabled: false
+nginx:
+  enabled: false
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+overrides_exporter:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 25m
+      memory: 64Mi
+querier:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+query_frontend:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+query_scheduler:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+results-cache:
+  enabled: false
+ruler:
+  enabled: false
+store_gateway:
+  persistentVolume:
+    enabled: true
+    size: 20Gi
+    storageClass: local-path
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  zoneAwareReplication:
+    enabled: false

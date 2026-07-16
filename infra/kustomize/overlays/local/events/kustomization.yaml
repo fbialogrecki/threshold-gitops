@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: threshold
+resources:
+  - ../../../base/events
+images:
+  - name: threshold/events
+    newName: core.harbor.domain/threshold/events
+    newTag: "36ce117"
+patches:
+  - target:
+      kind: ConfigMap
+      name: events-config
+    patch: |-
+      - op: replace
+        path: /data/THRESHOLD_ENVIRONMENT
+        value: local

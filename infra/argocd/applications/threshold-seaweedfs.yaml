@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-seaweedfs
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-seaweedfs
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: object-storage
+spec:
+  project: platform
+  sources:
+    - repoURL: https://seaweedfs.github.io/seaweedfs/helm
+      chart: seaweedfs
+      targetRevision: 4.33.0
+      helm:
+        releaseName: seaweedfs
+        valueFiles:
+          - $values/infra/helm/seaweedfs/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: seaweedfs
+  # seaweedfs-db-secret feeds the optional WEED_MYSQL_* env on the filer, but the
+  # filer runs the leveldb2 store (WEED_MYSQL_ENABLED=false, host is a dummy), so
+  # the value is functionally inert. The chart generates it via a pre-install hook
+  # with a random password and relies on `lookup` to keep it stable; ArgoCD's
+  # `helm template` cannot lookup, so ignore its data to avoid perpetual drift.
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: seaweedfs-db-secret
+      jsonPointers:
+        - /data
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

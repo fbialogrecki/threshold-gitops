@@ -1,0 +1,105 @@
+# NUC-sized OpenTelemetry Collector values for Threshold observability MVP.
+# Render target: open-telemetry/opentelemetry-collector.
+#
+# Reconciled from the live helm release during the 2026-06-13 GitOps adoption:
+# alternateConfig pipeline (otlp -> loki-gateway/mimir-gateway/tempo).
+
+alternateConfig:
+  exporters:
+    otlp/tempo:
+      endpoint: tempo.observability.svc.cluster.local:4317
+      tls:
+        insecure: true
+    otlphttp/loki:
+      endpoint: http://loki-gateway.observability.svc.cluster.local/otlp
+    prometheusremotewrite/mimir:
+      endpoint: http://mimir-gateway.observability.svc.cluster.local/api/v1/push
+  extensions:
+    health_check:
+      endpoint: ${env:MY_POD_IP}:13133
+  processors:
+    batch: {}
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 512
+      spike_limit_mib: 128
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+  service:
+    extensions:
+    - health_check
+    pipelines:
+      logs:
+        exporters:
+        - otlphttp/loki
+        processors:
+        - memory_limiter
+        - batch
+        receivers:
+        - otlp
+      metrics:
+        exporters:
+        - prometheusremotewrite/mimir
+        processors:
+        - memory_limiter
+        - batch
+        receivers:
+        - otlp
+      traces:
+        exporters:
+        - otlp/tempo
+        processors:
+        - memory_limiter
+        - batch
+        receivers:
+        - otlp
+    telemetry:
+      metrics:
+        readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: ${env:MY_POD_IP}
+                port: 8888
+fullnameOverride: otel-collector
+image:
+  repository: otel/opentelemetry-collector-contrib
+mode: deployment
+ports:
+  jaeger-compact:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  metrics:
+    containerPort: 8888
+    enabled: true
+    protocol: TCP
+    servicePort: 8888
+  otlp:
+    appProtocol: grpc
+    containerPort: 4317
+    enabled: true
+    protocol: TCP
+    servicePort: 4317
+  otlp-http:
+    containerPort: 4318
+    enabled: true
+    protocol: TCP
+    servicePort: 4318
+  zipkin:
+    enabled: false
+replicaCount: 1
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi

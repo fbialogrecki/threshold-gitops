@@ -1,0 +1,30 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: threshold-web-env
+  namespace: threshold
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao
+    kind: ClusterSecretStore
+  target:
+    name: threshold-web-env
+    creationPolicy: Owner
+    template:
+      mergePolicy: Merge
+      data:
+        USERS_SERVICE_URL: http://users.threshold.svc.cluster.local
+        SOCIAL_SERVICE_URL: http://social.threshold.svc.cluster.local
+        MEDIA_SERVICE_URL: http://media.threshold.svc.cluster.local
+        EVENTS_SERVICE_URL: http://events.threshold.svc.cluster.local
+        AUTH_COOKIE_SECURE: "false"
+  data:
+    - secretKey: AUTH_SECRET
+      remoteRef:
+        key: threshold/web
+        property: AUTH_SECRET
+    - secretKey: THRESHOLD_INTERNAL_TOKEN
+      remoteRef:
+        key: threshold/internal
+        property: THRESHOLD_INTERNAL_TOKEN

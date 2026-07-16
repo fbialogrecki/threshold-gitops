@@ -1,0 +1,10 @@
+config:
+  cluster:
+    enabled: false
+    replicas: 3
+  jetstream:
+    enabled: false
+  monitor:
+    enabled: true
+promExporter:
+  enabled: false

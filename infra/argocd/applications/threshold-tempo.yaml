@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-tempo
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-tempo
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: observability
+spec:
+  project: platform
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: tempo
+      targetRevision: 1.24.4
+      helm:
+        releaseName: tempo
+        valueFiles:
+          - $values/infra/helm/tempo/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

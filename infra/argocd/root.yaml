@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-root
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-root
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: gitops-root
+spec:
+  project: platform
+  source:
+    repoURL: git@github.com:fbialogrecki/threshold.git
+    targetRevision: gitops
+    path: infra/argocd
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

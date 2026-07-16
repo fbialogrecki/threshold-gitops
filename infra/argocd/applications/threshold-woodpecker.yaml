@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-woodpecker
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-woodpecker
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: ci
+spec:
+  project: platform
+  sources:
+    - repoURL: https://woodpecker-ci.org/
+      chart: woodpecker
+      targetRevision: 3.6.4
+      helm:
+        releaseName: woodpecker
+        valueFiles:
+          - $values/infra/helm/woodpecker/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: woodpecker
+  # The chart generates WOODPECKER_AGENT_SECRET randomly and relies on helm
+  # `lookup` to keep it stable across upgrades. ArgoCD's `helm template` cannot
+  # lookup, so it would regenerate the shared server/agent secret on every
+  # reconcile (perpetual drift + auth churn). Ignore its data to preserve the
+  # live value; server and agents keep the secret they booted with.
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: woodpecker-default-agent-secret
+      jsonPointers:
+        - /data
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

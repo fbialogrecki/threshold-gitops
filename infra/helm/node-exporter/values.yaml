@@ -1,0 +1,17 @@
+# NUC-sized node-exporter for Threshold infra metrics.
+# Render target: prometheus-community/prometheus-node-exporter.
+#
+# DaemonSet on hostNetwork exposing :9100. Scraped by Alloy via Kubernetes pod
+# discovery (label app.kubernetes.io/name=prometheus-node-exporter, container port
+# 9100) and remote-written to Mimir. No ServiceMonitor: no prometheus-operator here.
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 96Mi
+
+prometheus:
+  monitor:
+    enabled: false

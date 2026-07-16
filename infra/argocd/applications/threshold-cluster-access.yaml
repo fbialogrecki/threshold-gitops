@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-cluster-access
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-cluster-access
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: cluster-access
+spec:
+  project: platform
+  source:
+    repoURL: git@github.com:fbialogrecki/threshold.git
+    targetRevision: gitops
+    path: infra/kustomize/overlays/local/cluster-access
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

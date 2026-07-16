@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: threshold
+resources:
+  - ../../../base/auth-gateway
+  - ingress.yaml
+images:
+  - name: threshold/auth-gateway
+    newName: core.harbor.domain/threshold/auth-gateway
+    newTag: "36ce117"
+patches:
+  - target:
+      kind: ConfigMap
+      name: auth-gateway-config
+    patch: |-
+      - op: replace
+        path: /data/THRESHOLD_ENVIRONMENT
+        value: local

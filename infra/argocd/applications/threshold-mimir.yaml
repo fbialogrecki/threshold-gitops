@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-mimir
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-mimir
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: observability
+spec:
+  project: platform
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: mimir-distributed
+      targetRevision: 6.0.6
+      helm:
+        releaseName: mimir
+        valueFiles:
+          - $values/infra/helm/mimir/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

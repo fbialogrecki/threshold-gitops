@@ -1,0 +1,1567 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-threshold-service
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: grafana-dashboard-threshold-service
+    app.kubernetes.io/part-of: threshold
+  annotations:
+    threshold.dev/source-file: infra/grafana/dashboards/threshold-service-overview.json
+data:
+  threshold-service-overview.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "text",
+          "title": "Dashboard contract",
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "Per-service MVP dashboard. Expects OpenTelemetry HTTP server metrics from FastAPI services and Loki pod logs. If a metric name differs by exporter version, keep the panel but adjust the PromQL in this JSON, not in Grafana UI."
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "RPS by service",
+          "description": "Request throughput per service.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (service_name, service) (rate(http_server_request_duration_seconds_count{namespace=\"$namespace\"}[5m])) or sum by (service_name, service) (rate(http_requests_total{namespace=\"$namespace\"}[5m]))",
+              "legendFormat": "{{service_name}}{{service}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Error rate 5xx / total",
+          "description": "HTTP 5xx share per service.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (service_name, service) (rate(http_server_request_duration_seconds_count{namespace=\"$namespace\", http_response_status_code=~\"5..\"}[5m])) / clamp_min(sum by (service_name, service) (rate(http_server_request_duration_seconds_count{namespace=\"$namespace\"}[5m])), 1)",
+              "legendFormat": "{{service_name}}{{service}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Latency p50",
+          "description": "Median HTTP latency.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.50, sum by (le, service_name, service) (rate(http_server_request_duration_seconds_bucket{namespace=\"$namespace\"}[5m])))",
+              "legendFormat": "{{service_name}}{{service}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Latency p95",
+          "description": "p95 HTTP latency.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95, sum by (le, service_name, service) (rate(http_server_request_duration_seconds_bucket{namespace=\"$namespace\"}[5m])))",
+              "legendFormat": "{{service_name}}{{service}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Latency p99",
+          "description": "p99 HTTP latency.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.99, sum by (le, service_name, service) (rate(http_server_request_duration_seconds_bucket{namespace=\"$namespace\"}[5m])))",
+              "legendFormat": "{{service_name}}{{service}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Application error logs",
+          "description": "Loki count of error-like log lines by app/container.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "logs"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (app, container) (count_over_time({namespace=\"$namespace\"} |~ \"(?i)(error|exception|traceback|critical)\" [5m]))",
+              "legendFormat": "{{app}} {{container}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Pod restarts by service",
+          "description": "Container restarts in selected namespace.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod, container) (increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[6h]))",
+              "legendFormat": "{{pod}} {{container}}",
+              "range": true
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": [
+        "threshold",
+        "mvp",
+        "services",
+        "fastapi",
+        "otel"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {
+              "text": "Mimir",
+              "value": "Mimir"
+            },
+            "label": "Metrics datasource",
+            "hide": 0
+          },
+          {
+            "name": "DS_LOKI",
+            "type": "datasource",
+            "query": "loki",
+            "current": {
+              "text": "Loki",
+              "value": "Loki"
+            },
+            "label": "Logs datasource",
+            "hide": 0
+          },
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "threshold",
+              "value": "threshold"
+            },
+            "includeAll": false,
+            "refresh": 1
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Threshold / Services overview",
+      "uid": "threshold-service-overview",
+      "version": 1,
+      "weekStart": ""
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-threshold-nats
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: grafana-dashboard-threshold-nats
+    app.kubernetes.io/part-of: threshold
+  annotations:
+    threshold.dev/source-file: infra/grafana/dashboards/threshold-nats-overview.json
+data:
+  threshold-nats-overview.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "text",
+          "title": "Dashboard contract",
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "Per-NATS MVP dashboard. Targets common NATS Prometheus exporter metric families (`gnatsd_*` / `nats_*`). Threshold MVP uses NATS Core without JetStream, so JetStream lag panels stay useful only after JetStream/exporter metrics are enabled."
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Inbound messages",
+          "description": "Inbound message rate.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(gnatsd_varz_in_msgs{namespace=\"$nats_namespace\"}[5m])) or sum(rate(nats_varz_in_msgs{namespace=\"$nats_namespace\"}[5m]))",
+              "legendFormat": "in",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Outbound messages",
+          "description": "Outbound message rate.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(gnatsd_varz_out_msgs{namespace=\"$nats_namespace\"}[5m])) or sum(rate(nats_varz_out_msgs{namespace=\"$nats_namespace\"}[5m]))",
+              "legendFormat": "out",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Pending bytes by connection",
+          "description": "Backpressure proxy: pending bytes per connection.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "topk(10, gnatsd_connz_pending_bytes{namespace=\"$nats_namespace\"}) or topk(10, nats_connz_pending_bytes{namespace=\"$nats_namespace\"})",
+              "legendFormat": "{{cid}} {{name}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Slow consumers / stalled connections",
+          "description": "Connections with pending bytes > 0.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(gnatsd_connz_pending_bytes{namespace=\"$nats_namespace\"} > 0) or sum(nats_connz_pending_bytes{namespace=\"$nats_namespace\"} > 0)",
+              "legendFormat": "slow-ish",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "JetStream consumer lag (future)",
+          "description": "Future panel. Empty while JetStream is intentionally disabled.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (stream, consumer) (nats_consumer_num_pending{namespace=\"$nats_namespace\"})",
+              "legendFormat": "{{stream}}/{{consumer}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "NATS warning/error logs",
+          "description": "NATS log anomalies.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "logs"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod) (count_over_time({namespace=\"$nats_namespace\"} |~ \"(?i)(error|warn|slow|stale|disconnect)\" [5m]))",
+              "legendFormat": "{{pod}}",
+              "range": true
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": [
+        "threshold",
+        "mvp",
+        "nats",
+        "messaging"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {
+              "text": "Mimir",
+              "value": "Mimir"
+            },
+            "label": "Metrics datasource",
+            "hide": 0
+          },
+          {
+            "name": "DS_LOKI",
+            "type": "datasource",
+            "query": "loki",
+            "current": {
+              "text": "Loki",
+              "value": "Loki"
+            },
+            "label": "Logs datasource",
+            "hide": 0
+          },
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "threshold",
+              "value": "threshold"
+            },
+            "includeAll": false,
+            "refresh": 1
+          },
+          {
+            "name": "nats_namespace",
+            "type": "constant",
+            "query": "nats",
+            "current": {
+              "text": "nats",
+              "value": "nats"
+            },
+            "label": "NATS namespace"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Threshold / NATS overview",
+      "uid": "threshold-nats-overview",
+      "version": 1,
+      "weekStart": ""
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-threshold-db
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: grafana-dashboard-threshold-db
+    app.kubernetes.io/part-of: threshold
+  annotations:
+    threshold.dev/source-file: infra/grafana/dashboards/threshold-db-overview.json
+data:
+  threshold-db-overview.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "text",
+          "title": "Dashboard contract",
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "Per-DB MVP dashboard for CloudNativePG/PostgreSQL. Slow-query panels need pg_stat_statements/exporter support; until then they are intentionally empty instead of faking data."
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Active connections",
+          "description": "Open PostgreSQL backends/connections.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (datname, pod) (cnpg_backends_total{namespace=\"$db_namespace\"}) or sum by (datname, pod) (pg_stat_database_numbackends{namespace=\"$db_namespace\"})",
+              "legendFormat": "{{datname}} {{pod}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Transactions",
+          "description": "Commit + rollback throughput.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "tps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (datname) (rate(cnpg_pg_stat_database_xact_commit{namespace=\"$db_namespace\"}[5m]) + rate(cnpg_pg_stat_database_xact_rollback{namespace=\"$db_namespace\"}[5m])) or sum by (datname) (rate(pg_stat_database_xact_commit{namespace=\"$db_namespace\"}[5m]) + rate(pg_stat_database_xact_rollback{namespace=\"$db_namespace\"}[5m]))",
+              "legendFormat": "{{datname}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Rollback rate",
+          "description": "Rollback throughput.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "tps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (datname) (rate(cnpg_pg_stat_database_xact_rollback{namespace=\"$db_namespace\"}[5m])) or sum by (datname) (rate(pg_stat_database_xact_rollback{namespace=\"$db_namespace\"}[5m]))",
+              "legendFormat": "{{datname}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "WAL generated",
+          "description": "WAL byte rate.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod) (rate(cnpg_pg_stat_wal_wal_bytes{namespace=\"$db_namespace\"}[5m])) or sum by (pod) (rate(pg_stat_wal_wal_bytes{namespace=\"$db_namespace\"}[5m]))",
+              "legendFormat": "{{pod}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Slow queries (pg_stat_statements)",
+          "description": "Requires pg_stat_statements metrics.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "topk(10, sum by (datname, queryid) (rate(pg_stat_statements_total_time_seconds{namespace=\"$db_namespace\"}[5m])))",
+              "legendFormat": "{{datname}} {{queryid}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "PostgreSQL/CNPG warning/error logs",
+          "description": "Database log anomalies.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "logs"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod) (count_over_time({namespace=\"$db_namespace\"} |~ \"(?i)(error|fatal|panic|slow|deadlock|checkpoint)\" [5m]))",
+              "legendFormat": "{{pod}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Replication lag",
+          "description": "Replica lag when replicas exist.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by (pod) (cnpg_pg_replication_lag_seconds{namespace=\"$db_namespace\"}) or max by (pod) (pg_replication_lag_seconds{namespace=\"$db_namespace\"})",
+              "legendFormat": "{{pod}}",
+              "range": true
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": [
+        "threshold",
+        "mvp",
+        "postgres",
+        "cnpg",
+        "database"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {
+              "text": "Mimir",
+              "value": "Mimir"
+            },
+            "label": "Metrics datasource",
+            "hide": 0
+          },
+          {
+            "name": "DS_LOKI",
+            "type": "datasource",
+            "query": "loki",
+            "current": {
+              "text": "Loki",
+              "value": "Loki"
+            },
+            "label": "Logs datasource",
+            "hide": 0
+          },
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "threshold",
+              "value": "threshold"
+            },
+            "includeAll": false,
+            "refresh": 1
+          },
+          {
+            "name": "db_namespace",
+            "type": "constant",
+            "query": "default",
+            "current": {
+              "text": "default",
+              "value": "default"
+            },
+            "label": "DB namespace"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Threshold / DB overview",
+      "uid": "threshold-db-overview",
+      "version": 1,
+      "weekStart": ""
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-threshold-authentik
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: grafana-dashboard-threshold-authentik
+    app.kubernetes.io/part-of: threshold
+  annotations:
+    threshold.dev/source-file: infra/grafana/dashboards/threshold-authentik-overview.json
+data:
+  threshold-authentik-overview.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "text",
+          "title": "Dashboard contract",
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "Per-Authentik MVP dashboard. Uses Loki event/log counts first because Authentik metrics names vary by chart/exporter. Replace LogQL with native metrics once Authentik Prometheus metrics are explicitly enabled."
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Login events",
+          "description": "Successful/attempted login-related events from logs.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "logs"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(count_over_time({namespace=\"$authentik_namespace\"} |~ \"(?i)(login|logged in|authentication succeeded|user_login)\" [5m]))",
+              "legendFormat": "login",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Failed logins",
+          "description": "Failed authentication events from logs.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "logs"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(count_over_time({namespace=\"$authentik_namespace\"} |~ \"(?i)(failed login|login failed|authentication failed|invalid credentials|denied)\" [5m]))",
+              "legendFormat": "failed",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Token refresh / OAuth token events",
+          "description": "Token lifecycle events from logs.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "logs"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(count_over_time({namespace=\"$authentik_namespace\"} |~ \"(?i)(refresh_token|token refresh|oauth2/token|openid|authorization_code)\" [5m]))",
+              "legendFormat": "token",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Authentik pod restarts",
+          "description": "Restarts in Authentik namespace.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod, container) (increase(kube_pod_container_status_restarts_total{namespace=\"$authentik_namespace\"}[6h]))",
+              "legendFormat": "{{pod}} {{container}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Authentik HTTP 5xx (if instrumented)",
+          "description": "5xx rate if Authentik metrics are scraped.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 13
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(http_server_request_duration_seconds_count{namespace=\"$authentik_namespace\", http_response_status_code=~\"5..\"}[5m])) or sum(rate(http_requests_total{namespace=\"$authentik_namespace\", status=~\"5..\"}[5m]))",
+              "legendFormat": "5xx",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Authentik warning/error logs",
+          "description": "Authentik application log anomalies.",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "logs"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod) (count_over_time({namespace=\"$authentik_namespace\"} |~ \"(?i)(error|exception|traceback|warning|critical)\" [5m]))",
+              "legendFormat": "{{pod}}",
+              "range": true
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Authentik DB connections (if labeled)",
+          "description": "PostgreSQL connections for Authentik database if metrics expose datname.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (pod, datname) (cnpg_backends_total{datname=~\".*authentik.*\"}) or sum by (pod, datname) (pg_stat_database_numbackends{datname=~\".*authentik.*\"})",
+              "legendFormat": "{{datname}} {{pod}}",
+              "range": true
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": [
+        "threshold",
+        "mvp",
+        "authentik",
+        "auth"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {
+              "text": "Mimir",
+              "value": "Mimir"
+            },
+            "label": "Metrics datasource",
+            "hide": 0
+          },
+          {
+            "name": "DS_LOKI",
+            "type": "datasource",
+            "query": "loki",
+            "current": {
+              "text": "Loki",
+              "value": "Loki"
+            },
+            "label": "Logs datasource",
+            "hide": 0
+          },
+          {
+            "name": "namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "threshold",
+              "value": "threshold"
+            },
+            "includeAll": false,
+            "refresh": 1
+          },
+          {
+            "name": "authentik_namespace",
+            "type": "constant",
+            "query": "authentik",
+            "current": {
+              "text": "authentik",
+              "value": "authentik"
+            },
+            "label": "Authentik namespace"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Threshold / Authentik overview",
+      "uid": "threshold-authentik-overview",
+      "version": 1,
+      "weekStart": ""
+    }

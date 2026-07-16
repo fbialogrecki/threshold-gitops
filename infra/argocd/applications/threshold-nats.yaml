@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-nats
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-nats
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: messaging
+spec:
+  project: platform
+  sources:
+    - repoURL: https://nats-io.github.io/k8s/helm/charts/
+      chart: nats
+      targetRevision: 2.12.6
+      helm:
+        releaseName: nats
+        valueFiles:
+          - $values/infra/helm/nats/values.yaml
+    - repoURL: git@github.com:fbialogrecki/threshold.git
+      targetRevision: gitops
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nats
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

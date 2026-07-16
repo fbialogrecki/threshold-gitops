@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-platform-operators
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-platform-operators
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: platform-operators
+spec:
+  project: platform
+  source:
+    repoURL: git@github.com:fbialogrecki/threshold.git
+    targetRevision: gitops
+    path: infra/kustomize/overlays/local/platform-operators
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

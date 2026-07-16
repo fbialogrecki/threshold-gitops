@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: threshold-services
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: services
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  # Conservative adoption policy: the controller only creates/updates the
+  # generated Applications (never deletes them), and workloads are preserved if
+  # this ApplicationSet is ever removed. Generated names are 1:1 with the former
+  # standalone Application files (threshold-web/-auth-gateway/-users/-social) so
+  # they adopt the live Applications in place instead of duplicating them.
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: true
+  generators:
+    - list:
+        elements:
+          - name: web
+          - name: auth-gateway
+          - name: users
+          - name: social
+          - name: media
+  template:
+    metadata:
+      name: "threshold-{{ .name }}"
+      labels:
+        app.kubernetes.io/name: "threshold-{{ .name }}"
+        app.kubernetes.io/component: "{{ .name }}"
+        app.kubernetes.io/part-of: threshold
+    spec:
+      project: apps
+      source:
+        repoURL: git@github.com:fbialogrecki/threshold.git
+        targetRevision: gitops
+        path: "infra/kustomize/overlays/local/{{ .name }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: threshold
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false

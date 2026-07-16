@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: threshold
+resources:
+  - ../../../base/media
+images:
+  - name: threshold/media
+    newName: core.harbor.domain/threshold/media
+    newTag: "36ce117"
+patches:
+  - target:
+      kind: ConfigMap
+      name: media-config
+    patch: |-
+      - op: replace
+        path: /data/THRESHOLD_ENVIRONMENT
+        value: local

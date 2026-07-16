@@ -1,0 +1,157 @@
+# NUC-sized Grafana Alloy values for Threshold observability MVP.
+# Render target: grafana/alloy.
+
+controller:
+  type: daemonset
+
+alloy:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+  mounts:
+    varlog: true
+  configMap:
+    create: true
+    # Reconciled from the live helm release (rev 12, 2026-05-31) during the
+    # 2026-06-13 GitOps adoption: file-based tailing + regex label extraction.
+    content: |
+      local.file_match "pod_logs" {
+        path_targets = [
+          { __path__ = "/var/log/pods/*/*/*.log" },
+        ]
+      }
+
+      loki.source.file "pod_logs" {
+        targets       = local.file_match.pod_logs.targets
+        forward_to    = [loki.process.pod_logs.receiver]
+        tail_from_end = true
+      }
+
+      loki.process "pod_logs" {
+        stage.regex {
+          source     = "filename"
+          expression = "/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>[^_]+)_(?P<pod_uid>[a-f0-9-]+)/(?P<container>[^/]+)/(?P<restart_count>[0-9]+)\\.log"
+        }
+
+        stage.regex {
+          source     = "pod"
+          expression = "^(?P<service>.+?)(?:-[a-f0-9]{8,10}-[a-z0-9]{5}|-[0-9]+)?$"
+        }
+
+        stage.labels {
+          values = {
+            namespace = "",
+            service   = "",
+            pod       = "",
+            pod_uid   = "",
+            container = "",
+          }
+        }
+
+        stage.cri {}
+
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+
+      // ---- Infrastructure metrics -> Mimir (added 2026-06-13) ----
+      // No prometheus-operator in this cluster, so targets are discovered via the
+      // Kubernetes API and selected by pod label + container port, then scraped
+      // directly and remote-written to Mimir (multitenancy disabled, no org header).
+      discovery.kubernetes "all_pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "kube_state_metrics" {
+        targets = discovery.kubernetes.all_pods.targets
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          regex         = "kube-state-metrics"
+          action        = "keep"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_port_number"]
+          regex         = "8080"
+          action        = "keep"
+        }
+      }
+
+      prometheus.scrape "kube_state_metrics" {
+        targets         = discovery.relabel.kube_state_metrics.output
+        forward_to      = [prometheus.remote_write.mimir.receiver]
+        job_name        = "kube-state-metrics"
+        scrape_interval = "30s"
+      }
+
+      discovery.relabel "node_exporter" {
+        targets = discovery.kubernetes.all_pods.targets
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          regex         = "prometheus-node-exporter"
+          action        = "keep"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_port_number"]
+          regex         = "9100"
+          action        = "keep"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      prometheus.scrape "node_exporter" {
+        targets         = discovery.relabel.node_exporter.output
+        forward_to      = [prometheus.remote_write.mimir.receiver]
+        job_name        = "node-exporter"
+        scrape_interval = "30s"
+      }
+
+      discovery.relabel "cnpg" {
+        targets = discovery.kubernetes.all_pods.targets
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_cnpg_io_cluster"]
+          regex         = ".+"
+          action        = "keep"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_port_number"]
+          regex         = "9187"
+          action        = "keep"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_cnpg_io_cluster"]
+          target_label  = "cnpg_cluster"
+        }
+      }
+
+      prometheus.scrape "cnpg" {
+        targets         = discovery.relabel.cnpg.output
+        forward_to      = [prometheus.remote_write.mimir.receiver]
+        job_name        = "cnpg"
+        scrape_interval = "30s"
+      }
+
+      prometheus.remote_write "mimir" {
+        endpoint {
+          url = "http://mimir-gateway.observability.svc.cluster.local/api/v1/push"
+        }
+      }

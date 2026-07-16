@@ -1,0 +1,26 @@
+s3:
+  enabled: true
+  enableAuth: true
+  existingConfigSecret: seaweedfs-s3-config
+  port: 8333
+  service:
+    type: ClusterIP
+  createBuckets:
+    - name: threshold-media
+      anonymousRead: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  podSecurityContext:
+    enabled: true
+    fsGroup: 65534
+  containerSecurityContext:
+    enabled: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL

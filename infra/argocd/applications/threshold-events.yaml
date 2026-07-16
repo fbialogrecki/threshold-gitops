@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: threshold-events
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: threshold-events
+    app.kubernetes.io/part-of: threshold
+    app.kubernetes.io/component: events
+spec:
+  project: apps
+  source:
+    repoURL: git@github.com:fbialogrecki/threshold.git
+    targetRevision: gitops
+    path: infra/kustomize/overlays/local/events
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: threshold
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

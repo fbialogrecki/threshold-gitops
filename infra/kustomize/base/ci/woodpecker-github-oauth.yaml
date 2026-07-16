@@ -1,0 +1,22 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: woodpecker-github-oauth
+  namespace: woodpecker
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao
+    kind: ClusterSecretStore
+  target:
+    name: woodpecker-github-oauth
+    creationPolicy: Owner
+  data:
+    - secretKey: WOODPECKER_GITHUB_CLIENT
+      remoteRef:
+        key: threshold/woodpecker
+        property: WOODPECKER_GITHUB_CLIENT
+    - secretKey: WOODPECKER_GITHUB_SECRET
+      remoteRef:
+        key: threshold/woodpecker
+        property: WOODPECKER_GITHUB_SECRET

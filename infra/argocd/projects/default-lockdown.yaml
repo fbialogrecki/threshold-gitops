@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    app.kubernetes.io/part-of: threshold
+spec:
+  description: >-
+    Locked down. Nothing should run in the default project; use the
+    platform or apps project instead.
+  sourceRepos: []
+  destinations: []

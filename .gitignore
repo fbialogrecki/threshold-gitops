@@ -1,0 +1,12 @@
+.hermes/
+/scripts/
+/docs/
+/documents/
+*.[mM][dD]
+.audit/
+reports/
+*.sarif
+*.spdx.json
+*.cyclonedx.json
+.env
+.env.*

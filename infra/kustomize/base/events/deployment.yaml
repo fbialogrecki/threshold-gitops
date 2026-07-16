@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: events
+  labels:
+    app.kubernetes.io/name: events
+    app.kubernetes.io/part-of: threshold
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: events
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: events
+        app.kubernetes.io/part-of: threshold
+    spec:
+      serviceAccountName: events
+      containers:
+        - name: events
+          image: threshold/events:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: events-config
+            - secretRef:
+                name: events-secrets
+          env:
+            - name: THRESHOLD_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: events-postgres-app
+                  key: uri
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

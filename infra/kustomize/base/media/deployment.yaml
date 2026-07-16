@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media
+  labels:
+    app.kubernetes.io/name: media
+    app.kubernetes.io/part-of: threshold
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: media
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: media
+        app.kubernetes.io/part-of: threshold
+    spec:
+      serviceAccountName: media
+      containers:
+        - name: media
+          image: threshold/media:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: media-config
+            - secretRef:
+                name: media-secrets
+            - secretRef:
+                name: media-s3
+          env:
+            - name: THRESHOLD_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: media-postgres-app
+                  key: uri
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

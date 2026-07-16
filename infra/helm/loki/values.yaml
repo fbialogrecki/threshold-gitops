@@ -1,0 +1,66 @@
+# NUC-sized Loki values for Threshold observability MVP.
+# Render target: grafana/loki.
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2026-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  limits_config:
+    retention_period: 720h # 30 days
+    retention_stream:
+      # Audit/security streams are retained for 12 months per documents/observability.md §10.
+      # Streams opt in through the `retention="audit"` Loki label, propagated by Alloy
+      # from pod label `threshold.io/log-retention=audit`.
+      - selector: '{retention="audit"}'
+        priority: 20
+        period: 8760h # 12 months
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 30Gi
+
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+lokiCanary:
+  enabled: false
+
+test:
+  enabled: false

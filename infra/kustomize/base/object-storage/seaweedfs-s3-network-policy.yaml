@@ -1,0 +1,47 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: seaweedfs-s3-ingress
+  namespace: seaweedfs
+  labels:
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: s3
+    app.kubernetes.io/part-of: threshold
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+      app.kubernetes.io/instance: seaweedfs
+      app.kubernetes.io/component: s3
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: threshold
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: media
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: threshold
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/managed-by: cloudnative-pg
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: default
+          podSelector:
+            matchLabels:
+              app: barman-cloud
+      ports:
+        - protocol: TCP
+          port: 8333
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 9327

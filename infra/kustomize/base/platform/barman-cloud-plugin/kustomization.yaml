@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+resources:
+  - plugin-barman-cloud.v0.12.0.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: threshold-platform
+      app.kubernetes.io/managed-by: argocd
+    includeSelectors: false
+    includeTemplates: true
+patches:
+  - target:
+      kind: Namespace
+      name: cnpg-system
+    patch: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: cnpg-system
+      $patch: delete

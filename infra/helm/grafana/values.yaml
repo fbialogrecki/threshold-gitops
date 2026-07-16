@@ -1,0 +1,275 @@
+# NUC-sized Grafana values for Threshold observability MVP.
+# Render target: grafana/grafana.
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+persistence:
+  enabled: true
+  type: pvc
+  storageClassName: local-path
+  size: 5Gi
+
+# The first Grafana start creates renderer temp directories that can make the
+# chart's recursive busybox chown fail on local-path during later rolling updates.
+# The main container already runs as UID/GID 472 with fsGroup 472.
+initChownData:
+  enabled: false
+
+service:
+  type: ClusterIP
+
+grafana.ini:
+  server:
+    domain: grafana.internal
+    root_url: http://grafana.internal/
+
+# Secret must be provided separately via OpenBao/ExternalSecrets before live deploy.
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Mimir
+        type: prometheus
+        # uid pinned to the value Grafana already assigned on the live instance so
+        # provisioned alert rules can reference it without changing existing
+        # dashboards. Do not edit without re-pointing alerting/*.yaml below.
+        uid: PAE45454D0EDB9216
+        access: proxy
+        url: http://mimir-gateway.observability.svc.cluster.local/prometheus
+        isDefault: true
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.observability.svc.cluster.local:3100
+      - name: Tempo
+        type: tempo
+        access: proxy
+        url: http://tempo.observability.svc.cluster.local:3200
+
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    searchNamespace: observability
+
+# Keep helm test hooks out of the ArgoCD render (no-op for live resources).
+testFramework:
+  enabled: false
+
+# Unified alerting rules provisioned as code (2026-06-13). Rules evaluate against
+# Mimir infra metrics (Faza C) and surface state in the Grafana Alerting UI. No
+# external contact point/channel is wired yet (UI-only, by decision); the default
+# notification policy applies. See documents/observability-alerting.md for how to
+# add a real contact point + notification policy later.
+alerting:
+  rules.yaml:
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: threshold-infra
+        folder: Threshold Alerts
+        interval: 1m
+        rules:
+          - uid: threshold-cnpg-down
+            title: CNPG instance down
+            condition: C
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: CNPG instance unreachable
+              description: "{{`CNPG scrape target {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.cnpg_cluster }}) reported up=0 for 5m.`}}"
+            noDataState: OK
+            execErrState: Error
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: PAE45454D0EDB9216
+                model:
+                  editorMode: code
+                  expr: 'up{job="cnpg"} == bool 0'
+                  instant: true
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: C
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: __expr__
+                model:
+                  conditions:
+                    - evaluator:
+                        params: [0]
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: [C]
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  expression: A
+                  refId: C
+                  type: threshold
+          # NB: cnpg_collector_last_available_backup_timestamp is NOT reliable with
+          # the barman-cloud PLUGIN (stays frozen/0 even though daily ScheduledBackups
+          # complete), so base-backup-age cannot be alerted on from that series. We
+          # alert on WAL archiving health instead, which is the critical continuous-
+          # backup failure mode and is reliably exported. Base-backup-age alerting
+          # needs a CR-state exporter (documented follow-up).
+          - uid: threshold-cnpg-backup-old
+            title: CNPG WAL archiving stuck
+            condition: C
+            for: 30m
+            labels:
+              severity: warning
+            annotations:
+              summary: CNPG WAL segments not being archived
+              description: "{{`Cluster {{ $labels.cnpg_cluster }} has {{ $value }} WAL segments waiting to be archived for 30m; continuous backup / PITR is at risk.`}}"
+            noDataState: OK
+            execErrState: Error
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: PAE45454D0EDB9216
+                model:
+                  editorMode: code
+                  expr: 'cnpg_collector_pg_wal_archive_status{namespace="threshold", value="ready"}'
+                  instant: true
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: C
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: __expr__
+                model:
+                  conditions:
+                    - evaluator:
+                        params: [0]
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: [C]
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  expression: A
+                  refId: C
+                  type: threshold
+          - uid: threshold-node-disk-near-full
+            title: Node disk near full
+            condition: C
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: Node root filesystem low on space
+              description: "{{`Node {{ $labels.instance }} root filesystem is below 10% free for 15m (PVCs use local storage on this disk).`}}"
+            noDataState: OK
+            execErrState: Error
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: PAE45454D0EDB9216
+                model:
+                  editorMode: code
+                  expr: 'node_filesystem_avail_bytes{fstype=~"ext4|xfs|btrfs",mountpoint="/"} / node_filesystem_size_bytes{fstype=~"ext4|xfs|btrfs",mountpoint="/"}'
+                  instant: true
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: C
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: __expr__
+                model:
+                  conditions:
+                    - evaluator:
+                        params: [0.1]
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params: [C]
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  expression: A
+                  refId: C
+                  type: threshold
+          - uid: threshold-pod-crashloop
+            title: Pod crash looping
+            condition: C
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: Pod is CrashLoopBackOff
+              description: "{{`Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} has been in CrashLoopBackOff for 5m.`}}"
+            noDataState: OK
+            execErrState: Error
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: PAE45454D0EDB9216
+                model:
+                  editorMode: code
+                  expr: 'max by (namespace, pod, container) (kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace=~"threshold|observability|woodpecker|seaweedfs|authentik|infra"})'
+                  instant: true
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: C
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                datasourceUid: __expr__
+                model:
+                  conditions:
+                    - evaluator:
+                        params: [0]
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: [C]
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  expression: A
+                  refId: C
+                  type: threshold

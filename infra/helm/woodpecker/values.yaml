@@ -1,0 +1,29 @@
+server:
+  env:
+    WOODPECKER_ADMIN: "fbialogrecki"
+    WOODPECKER_HOST: "http://woodpecker.internal"
+    WOODPECKER_GITHUB: "true"
+    WOODPECKER_BACKEND_KUBERNETES: "true"
+  extraSecretNamesForEnvFrom:
+    - woodpecker-github-oauth
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - host: woodpecker.internal
+        paths:
+          - path: /
+            backend:
+              serviceName: woodpecker-server
+              servicePort: 80
+
+agent:
+  env:
+    WOODPECKER_SERVER: "woodpecker-server:9000"
+    WOODPECKER_BACKEND: kubernetes
+    WOODPECKER_BACKEND_K8S_NAMESPACE: woodpecker
+    WOODPECKER_BACKEND_K8S_NAMESPACE_PER_ORGANIZATION: "false"
+    WOODPECKER_BACKEND_K8S_STORAGE_CLASS: local-path
+    WOODPECKER_BACKEND_K8S_STORAGE_RWX: "false"
+    WOODPECKER_BACKEND_K8S_VOLUME_SIZE: 10G
+    WOODPECKER_CONNECT_RETRY_COUNT: "5"

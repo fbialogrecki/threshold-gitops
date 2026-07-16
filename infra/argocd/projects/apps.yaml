@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: apps
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    app.kubernetes.io/part-of: threshold
+spec:
+  description: >-
+    Threshold product services (web, auth-gateway, users, social) with their
+    databases, secrets, and network policies. Namespaced resources only.
+  sourceRepos:
+    - git@github.com:fbialogrecki/threshold.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: threshold

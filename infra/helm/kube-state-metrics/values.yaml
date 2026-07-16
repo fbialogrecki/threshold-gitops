@@ -1,0 +1,20 @@
+# NUC-sized kube-state-metrics for Threshold infra metrics.
+# Render target: prometheus-community/kube-state-metrics.
+#
+# Scraped by Alloy via Kubernetes pod discovery (label
+# app.kubernetes.io/name=kube-state-metrics, container port 8080) and remote-written
+# to Mimir. No ServiceMonitor: there is no prometheus-operator in this cluster.
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 192Mi
+
+prometheus:
+  monitor:
+    enabled: false
+
+selfMonitor:
+  enabled: false

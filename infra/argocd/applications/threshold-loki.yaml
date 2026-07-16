@@ -17,8 +17,8 @@ spec:
         releaseName: loki
         valueFiles:
           - $values/infra/helm/loki/values.yaml
-    - repoURL: git@github.com:fbialogrecki/threshold.git
-      targetRevision: gitops
+    - repoURL: git@github.com:fbialogrecki/threshold-gitops.git
+      targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc

@@ -12,7 +12,7 @@ spec:
     Threshold platform components: operators, secrets plumbing, object storage,
     CI glue, observability, cluster access, and the GitOps root itself.
   sourceRepos:
-    - git@github.com:fbialogrecki/threshold.git
+    - git@github.com:fbialogrecki/threshold-gitops.git
     - https://grafana.github.io/helm-charts
     - https://open-telemetry.github.io/opentelemetry-helm-charts
     - https://prometheus-community.github.io/helm-charts

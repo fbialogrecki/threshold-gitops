@@ -12,7 +12,7 @@ spec:
     Threshold product services (web, auth-gateway, users, social) with their
     databases, secrets, and network policies. Namespaced resources only.
   sourceRepos:
-    - git@github.com:fbialogrecki/threshold.git
+    - git@github.com:fbialogrecki/threshold-gitops.git
   destinations:
     - server: https://kubernetes.default.svc
       namespace: threshold

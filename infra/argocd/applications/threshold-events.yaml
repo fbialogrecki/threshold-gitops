@@ -10,8 +10,8 @@ metadata:
 spec:
   project: apps
   source:
-    repoURL: git@github.com:fbialogrecki/threshold.git
-    targetRevision: gitops
+    repoURL: git@github.com:fbialogrecki/threshold-gitops.git
+    targetRevision: main
     path: infra/kustomize/overlays/local/events
   destination:
     server: https://kubernetes.default.svc

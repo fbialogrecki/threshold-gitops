@@ -324,6 +324,7 @@ metadata:
     app.kubernetes.io/name: woodpecker-webhook-poller
     app.kubernetes.io/part-of: threshold
 spec:
+  suspend: true
   schedule: "*/2 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1

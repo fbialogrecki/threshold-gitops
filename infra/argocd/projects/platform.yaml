@@ -31,8 +31,6 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: woodpecker
     - server: https://kubernetes.default.svc
-      namespace: cloudflared
-    - server: https://kubernetes.default.svc
       namespace: nats
     - server: https://kubernetes.default.svc
       namespace: default

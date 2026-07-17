@@ -2,6 +2,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: media-migrate
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
   labels:
     app.kubernetes.io/name: media
     app.kubernetes.io/component: migration
@@ -15,12 +18,22 @@ spec:
         app.kubernetes.io/component: migration
         app.kubernetes.io/part-of: threshold
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       restartPolicy: Never
       serviceAccountName: media
       containers:
         - name: migrate
           image: threshold/media:dev
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           workingDir: /app/services/media
           command: ["uv", "run", "alembic", "upgrade", "head"]
           envFrom:
@@ -36,3 +49,10 @@ spec:
                 secretKeyRef:
                   name: media-postgres-app
                   key: uri
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

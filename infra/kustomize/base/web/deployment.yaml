@@ -84,6 +84,8 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: bun-runtime
+              mountPath: /app/bun-dist
           resources:
             requests:
               cpu: 100m
@@ -93,5 +95,8 @@ spec:
               memory: 1Gi
       volumes:
         - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi
+        - name: bun-runtime
           emptyDir:
             sizeLimit: 128Mi

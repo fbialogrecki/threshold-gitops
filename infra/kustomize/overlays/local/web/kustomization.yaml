@@ -7,4 +7,4 @@ resources:
 images:
   - name: threshold/web
     newName: core.harbor.domain/threshold/web
-    newTag: "36ce117"
+    digest: sha256:335fc36fcf14dc74b1af55ac267c550460217ce512892e0ce21f95aceb75eec8

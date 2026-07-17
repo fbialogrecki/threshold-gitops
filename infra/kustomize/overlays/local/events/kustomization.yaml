@@ -6,7 +6,7 @@ resources:
 images:
   - name: threshold/events
     newName: core.harbor.domain/threshold/events
-    newTag: "36ce117"
+    digest: sha256:21ead7ac405a9e615411f4db1ea8b141c88bcad386a4fdb3d22e080704e8ca31
 patches:
   - target:
       kind: ConfigMap

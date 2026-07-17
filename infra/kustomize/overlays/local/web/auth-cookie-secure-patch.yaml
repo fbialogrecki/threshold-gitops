@@ -1,0 +1,11 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: threshold-web-env
+  namespace: threshold
+spec:
+  target:
+    template:
+      data:
+        AUTH_COOKIE_SECURE: "false"
+        WEB_TRUSTED_LAN_HTTP: "true"

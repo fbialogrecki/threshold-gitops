@@ -4,6 +4,8 @@ namespace: threshold
 resources:
   - ../../../base/web
   - ingress.yaml
+patches:
+  - path: auth-cookie-secure-patch.yaml
 images:
   - name: threshold/web
     newName: core.harbor.domain/threshold/web

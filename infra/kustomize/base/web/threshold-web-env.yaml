@@ -18,7 +18,7 @@ spec:
         SOCIAL_SERVICE_URL: http://social.threshold.svc.cluster.local
         MEDIA_SERVICE_URL: http://media.threshold.svc.cluster.local
         EVENTS_SERVICE_URL: http://events.threshold.svc.cluster.local
-        AUTH_COOKIE_SECURE: "false"
+        AUTH_COOKIE_SECURE: "true"
   data:
     - secretKey: AUTH_SECRET
       remoteRef:

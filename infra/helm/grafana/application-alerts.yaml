@@ -1,0 +1,152 @@
+alerting:
+  threshold-application-rules.yaml:
+    apiVersion: 1
+    groups:
+    - orgId: 1
+      name: threshold-applications
+      folder: Threshold Alerts
+      interval: 1m
+      rules:
+      - uid: threshold-app-unavailable
+        title: Threshold application unavailable
+        condition: C
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: A Threshold application deployment has no available replica.
+        noDataState: Alerting
+        execErrState: Error
+        data:
+        - refId: A
+          relativeTimeRange:
+            from: 900
+            to: 0
+          datasourceUid: PAE45454D0EDB9216
+          model:
+            editorMode: code
+            expr: min by (deployment) (kube_deployment_status_replicas_available{namespace="threshold",deployment=~"auth-gateway|events|media|social|users|web"})
+            instant: true
+            intervalMs: 1000
+            maxDataPoints: 43200
+            range: false
+            refId: A
+        - refId: C
+          relativeTimeRange:
+            from: 900
+            to: 0
+          datasourceUid: __expr__
+          model:
+            conditions:
+            - evaluator:
+                params:
+                - 1
+                type: lt
+              operator:
+                type: and
+              query:
+                params:
+                - C
+              reducer:
+                params: []
+                type: last
+              type: query
+            expression: A
+            refId: C
+            type: threshold
+      - uid: threshold-app-http-5xx
+        title: Threshold application 5xx rate elevated
+        condition: C
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 5% of Threshold service requests return 5xx.
+        noDataState: OK
+        execErrState: Error
+        data:
+        - refId: A
+          relativeTimeRange:
+            from: 900
+            to: 0
+          datasourceUid: PAE45454D0EDB9216
+          model:
+            editorMode: code
+            expr: sum(rate(threshold_http_server_errors_total{service_name=~"auth-gateway|events|media|social|users"}[5m]))
+              / clamp_min(sum(rate(threshold_http_server_requests_total{service_name=~"auth-gateway|events|media|social|users"}[5m])),
+              0.001)
+            instant: true
+            intervalMs: 1000
+            maxDataPoints: 43200
+            range: false
+            refId: A
+        - refId: C
+          relativeTimeRange:
+            from: 900
+            to: 0
+          datasourceUid: __expr__
+          model:
+            conditions:
+            - evaluator:
+                params:
+                - 0.05
+                type: gt
+              operator:
+                type: and
+              query:
+                params:
+                - C
+              reducer:
+                params: []
+                type: last
+              type: query
+            expression: A
+            refId: C
+            type: threshold
+      - uid: threshold-app-http-latency
+        title: Threshold application p95 latency elevated
+        condition: C
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Threshold service p95 HTTP latency exceeds one second.
+        noDataState: OK
+        execErrState: Error
+        data:
+        - refId: A
+          relativeTimeRange:
+            from: 900
+            to: 0
+          datasourceUid: PAE45454D0EDB9216
+          model:
+            editorMode: code
+            expr: histogram_quantile(0.95, sum by (le) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~"auth-gateway|events|media|social|users"}[5m])))
+            instant: true
+            intervalMs: 1000
+            maxDataPoints: 43200
+            range: false
+            refId: A
+        - refId: C
+          relativeTimeRange:
+            from: 900
+            to: 0
+          datasourceUid: __expr__
+          model:
+            conditions:
+            - evaluator:
+                params:
+                - 1.0
+                type: gt
+              operator:
+                type: and
+              query:
+                params:
+                - C
+              reducer:
+                params: []
+                type: last
+              type: query
+            expression: A
+            refId: C
+            type: threshold

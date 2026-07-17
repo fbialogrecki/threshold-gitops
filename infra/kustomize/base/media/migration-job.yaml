@@ -18,20 +18,22 @@ spec:
         app.kubernetes.io/component: migration
         app.kubernetes.io/part-of: threshold
     spec:
+      serviceAccountName: media
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       restartPolicy: Never
-      serviceAccountName: media
       containers:
         - name: migrate
           image: threshold/media:dev
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           workingDir: /app/services/media
@@ -44,11 +46,20 @@ spec:
             - secretRef:
                 name: media-s3
           env:
+            - name: HOME
+              value: /tmp
+            - name: UV_CACHE_DIR
+              value: /tmp/uv-cache
+            - name: UV_NO_SYNC
+              value: "1"
             - name: THRESHOLD_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: media-postgres-app
                   key: uri
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 50m
@@ -56,3 +67,7 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

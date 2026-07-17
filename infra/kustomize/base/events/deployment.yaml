@@ -45,17 +45,16 @@ spec:
           ports:
             - name: http
               containerPort: 8000
-          env:
-            - name: HOME
-              value: /tmp
-            - name: UV_CACHE_DIR
-              value: /tmp/uv-cache
           envFrom:
             - configMapRef:
                 name: events-config
             - secretRef:
                 name: events-secrets
           env:
+            - name: HOME
+              value: /tmp
+            - name: UV_CACHE_DIR
+              value: /tmp/uv-cache
             - name: THRESHOLD_DATABASE_URL
               valueFrom:
                 secretKeyRef:

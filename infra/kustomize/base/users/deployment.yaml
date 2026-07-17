@@ -45,11 +45,6 @@ spec:
           ports:
             - name: http
               containerPort: 8000
-          env:
-            - name: HOME
-              value: /tmp
-            - name: UV_CACHE_DIR
-              value: /tmp/uv-cache
           envFrom:
             - configMapRef:
                 name: users-config
@@ -58,6 +53,10 @@ spec:
             - secretRef:
                 name: social-secrets
           env:
+            - name: HOME
+              value: /tmp
+            - name: UV_CACHE_DIR
+              value: /tmp/uv-cache
             - name: THRESHOLD_DATABASE_URL
               valueFrom:
                 secretKeyRef:

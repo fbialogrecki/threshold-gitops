@@ -50,6 +50,8 @@ spec:
               value: /tmp
             - name: UV_CACHE_DIR
               value: /tmp/uv-cache
+            - name: UV_NO_SYNC
+              value: "1"
           envFrom:
             - configMapRef:
                 name: auth-gateway-config

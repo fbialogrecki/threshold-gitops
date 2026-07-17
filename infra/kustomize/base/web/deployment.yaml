@@ -34,6 +34,22 @@ spec:
         runAsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: seed-bun-runtime
+          image: threshold/web:dev
+          command:
+            - sh
+            - -c
+            - cp -a /app/bun-dist/runtime/. /runtime/
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: bun-runtime
+              mountPath: /runtime
       containers:
         - name: web
           image: threshold/web:dev

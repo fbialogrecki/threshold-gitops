@@ -36,22 +36,6 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-      initContainers:
-        - name: seed-bun-runtime
-          image: threshold/web:dev
-          command:
-            - sh
-            - -c
-            - cp -R /app/bun-dist/runtime/. /runtime/
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - name: bun-runtime
-              mountPath: /runtime
       containers:
         - name: web
           image: threshold/web:dev
@@ -102,8 +86,8 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-            - name: bun-runtime
-              mountPath: /app/bun-dist/runtime
+            - name: next-cache
+              mountPath: /app/.next/cache
           resources:
             requests:
               cpu: 100m
@@ -115,6 +99,6 @@ spec:
         - name: tmp
           emptyDir:
             sizeLimit: 128Mi
-        - name: bun-runtime
+        - name: next-cache
           emptyDir:
             sizeLimit: 128Mi

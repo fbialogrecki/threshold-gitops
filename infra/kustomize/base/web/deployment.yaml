@@ -85,7 +85,7 @@ spec:
             - name: tmp
               mountPath: /tmp
             - name: bun-runtime
-              mountPath: /app/bun-dist
+              mountPath: /app/bun-dist/runtime
           resources:
             requests:
               cpu: 100m

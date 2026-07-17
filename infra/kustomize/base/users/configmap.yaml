@@ -20,9 +20,7 @@ data:
   OTEL_LOGS_EXPORTER: otlp
   OTEL_PYTHON_LOG_CORRELATION: "true"
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.namespace=threshold
-  THRESHOLD_SMTP_ENABLED: "false"
-  THRESHOLD_SMTP_HOST: "localhost"
-  THRESHOLD_SMTP_PORT: "1025"
-  THRESHOLD_SMTP_USE_TLS: "false"
-  THRESHOLD_SMTP_FROM: "no-reply@threshold.internal"
-  THRESHOLD_WEB_HOST: "threshold.internal"
+  THRESHOLD_SMTP_HOST: smtp.resend.com
+  THRESHOLD_SMTP_PORT: "587"
+  THRESHOLD_SMTP_SECURITY: starttls
+  THRESHOLD_SMTP_TIMEOUT_SECONDS: "10"

@@ -9,3 +9,4 @@ spec:
       data:
         AUTH_COOKIE_SECURE: "false"
         WEB_TRUSTED_LAN_HTTP: "true"
+        WEB_TRUSTED_PROXY_DEPTH: "1"

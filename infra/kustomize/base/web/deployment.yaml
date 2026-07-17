@@ -42,7 +42,7 @@ spec:
           command:
             - sh
             - -c
-            - cp -a /app/bun-dist/runtime/. /runtime/
+            - cp -R /app/bun-dist/runtime/. /runtime/
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

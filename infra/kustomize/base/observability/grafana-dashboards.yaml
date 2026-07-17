@@ -46,7 +46,7 @@ data:
           },
           "options": {
             "mode": "markdown",
-            "content": "Per-service MVP dashboard. Expects OpenTelemetry HTTP server metrics from FastAPI services and Loki pod logs. If a metric name differs by exporter version, keep the panel but adjust the PromQL in this JSON, not in Grafana UI."
+            "content": "Per-service MVP dashboard. Uses Threshold's bounded custom HTTP metrics and Loki pod logs. Update the PromQL in this JSON, not in Grafana UI."
           }
         },
         {
@@ -83,8 +83,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (service_name, service) (rate(http_server_request_duration_seconds_count{namespace=\"$namespace\"}[5m])) or sum by (service_name, service) (rate(http_requests_total{namespace=\"$namespace\"}[5m]))",
-              "legendFormat": "{{service_name}}{{service}}",
+              "expr": "sum by (service_name) (rate(threshold_http_server_requests_total{service_name=~\"auth-gateway|events|media|social|users\"}[5m]))",
+              "legendFormat": "{{service_name}}",
               "range": true
             }
           ]
@@ -123,8 +123,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (service_name, service) (rate(http_server_request_duration_seconds_count{namespace=\"$namespace\", http_response_status_code=~\"5..\"}[5m])) / clamp_min(sum by (service_name, service) (rate(http_server_request_duration_seconds_count{namespace=\"$namespace\"}[5m])), 1)",
-              "legendFormat": "{{service_name}}{{service}}",
+              "expr": "sum by (service_name) (rate(threshold_http_server_errors_total{service_name=~\"auth-gateway|events|media|social|users\"}[5m])) / clamp_min(sum by (service_name) (rate(threshold_http_server_requests_total{service_name=~\"auth-gateway|events|media|social|users\"}[5m])), 0.001)",
+              "legendFormat": "{{service_name}}",
               "range": true
             }
           ]
@@ -163,8 +163,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "histogram_quantile(0.50, sum by (le, service_name, service) (rate(http_server_request_duration_seconds_bucket{namespace=\"$namespace\"}[5m])))",
-              "legendFormat": "{{service_name}}{{service}}",
+              "expr": "histogram_quantile(0.50, sum by (le, service_name) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~\"auth-gateway|events|media|social|users\"}[5m])))",
+              "legendFormat": "{{service_name}}",
               "range": true
             }
           ]
@@ -203,8 +203,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "histogram_quantile(0.95, sum by (le, service_name, service) (rate(http_server_request_duration_seconds_bucket{namespace=\"$namespace\"}[5m])))",
-              "legendFormat": "{{service_name}}{{service}}",
+              "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~\"auth-gateway|events|media|social|users\"}[5m])))",
+              "legendFormat": "{{service_name}}",
               "range": true
             }
           ]
@@ -243,8 +243,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "histogram_quantile(0.99, sum by (le, service_name, service) (rate(http_server_request_duration_seconds_bucket{namespace=\"$namespace\"}[5m])))",
-              "legendFormat": "{{service_name}}{{service}}",
+              "expr": "histogram_quantile(0.99, sum by (le, service_name) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~\"auth-gateway|events|media|social|users\"}[5m])))",
+              "legendFormat": "{{service_name}}",
               "range": true
             }
           ]

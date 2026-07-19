@@ -5,3 +5,4 @@ resources:
   - woodpecker-github-oauth.yaml
   - woodpecker-github-writer.yaml
   - woodpecker-harbor-ci.yaml
+  - woodpecker-release-config.yaml

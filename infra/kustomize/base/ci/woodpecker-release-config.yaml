@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: woodpecker-release-config
+  namespace: woodpecker
+  labels:
+    app.kubernetes.io/name: woodpecker-release-config
+    app.kubernetes.io/part-of: threshold
+data:
+  REGISTRY: core.harbor.domain
+  IMAGE_NAMESPACE: threshold
+  IMAGE_REGISTRY: core.harbor.domain/threshold
+  HARBOR_IP: 192.168.0.108
+  HARBOR_CA_SHA256: b0f1607d983eea930b25caf3299cec384e3d9d215a13d975c48211cfec893db9
+  GITOPS_REPO_SLUG: fbialogrecki/threshold-gitops
+  GITOPS_REPO_URL: https://github.com/fbialogrecki/threshold-gitops.git

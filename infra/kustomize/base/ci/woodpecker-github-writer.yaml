@@ -20,6 +20,10 @@ rules:
     resources: ["secrets"]
     resourceNames: ["woodpecker-github-writer"]
     verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["woodpecker-release-config"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

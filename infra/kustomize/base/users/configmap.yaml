@@ -12,6 +12,8 @@ data:
   THRESHOLD_NATS_URL: nats://nats.nats.svc.cluster.local:4222
   THRESHOLD_USERS_CURRENT_PROFILE_SUBJECT: users.current_profile.v1
   THRESHOLD_SOCIAL_SERVICE_URL: http://social.threshold.svc.cluster.local
+  THRESHOLD_EVENTS_SERVICE_URL: http://events.threshold.svc.cluster.local
+  THRESHOLD_MEDIA_SERVICE_URL: http://media.threshold.svc.cluster.local
   OTEL_SERVICE_NAME: users
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability.svc.cluster.local:4317
   OTEL_EXPORTER_OTLP_PROTOCOL: grpc

@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: woodpecker-release
+  labels:
+    app.kubernetes.io/name: woodpecker-release
+    app.kubernetes.io/part-of: threshold
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: woodpecker-harbor-ci
+  namespace: woodpecker
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao
+    kind: ClusterSecretStore
+  target:
+    name: woodpecker-harbor-ci
+    creationPolicy: Owner
+  data:
+    - secretKey: HARBOR_USERNAME
+      remoteRef:
+        key: threshold/ci/harbor
+        property: username
+    - secretKey: HARBOR_PASSWORD
+      remoteRef:
+        key: threshold/ci/harbor
+        property: password
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: woodpecker-github-writer
+  namespace: woodpecker
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: openbao
+    kind: ClusterSecretStore
+  target:
+    name: woodpecker-github-writer
+    creationPolicy: Owner
+  data:
+    - secretKey: GIT_USERNAME
+      remoteRef:
+        key: threshold/ci/github-writer
+        property: GIT_USERNAME
+    - secretKey: GIT_TOKEN
+      remoteRef:
+        key: threshold/ci/github-writer
+        property: GIT_TOKEN
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: woodpecker-release
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: woodpecker-release-agent
+  namespace: woodpecker-release
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims", "services", "secrets"]
+    verbs: ["create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["watch", "create", "delete", "get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: woodpecker-release-agent
+  namespace: woodpecker-release
+subjects:
+  - kind: ServiceAccount
+    name: woodpecker-agent
+    namespace: woodpecker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: woodpecker-release-agent
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: woodpecker-release-agent
+  namespace: woodpecker
+  labels:
+    app.kubernetes.io/name: woodpecker-release-agent
+    app.kubernetes.io/part-of: threshold
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: woodpecker-release-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: woodpecker-release-agent
+        app.kubernetes.io/part-of: threshold
+    spec:
+      serviceAccountName: woodpecker-agent
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: agent
+          image: docker.io/woodpeckerci/woodpecker-agent:v3.15.0@sha256:aecf04600c2f19c7ea79202177fadda8b8331d105ed981f0a8fd4725cf1df9e7
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+          ports:
+            - name: health
+              containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: woodpecker-default-agent-secret
+          env:
+            - name: WOODPECKER_AGENT_CONFIG_FILE
+              value: ""
+            - name: WOODPECKER_AGENT_LABELS
+              value: "!release=trusted,repo=fbialogrecki/threshold"
+            - name: WOODPECKER_BACKEND
+              value: kubernetes
+            - name: WOODPECKER_BACKEND_K8S_NAMESPACE
+              value: woodpecker-release
+            - name: WOODPECKER_BACKEND_K8S_NAMESPACE_PER_ORGANIZATION
+              value: "false"
+            - name: WOODPECKER_BACKEND_K8S_STORAGE_CLASS
+              value: local-path
+            - name: WOODPECKER_BACKEND_K8S_STORAGE_RWX
+              value: "false"
+            - name: WOODPECKER_BACKEND_K8S_VOLUME_SIZE
+              value: 10G
+            - name: WOODPECKER_CONNECT_RETRY_COUNT
+              value: "5"
+            - name: WOODPECKER_MAX_WORKFLOWS
+              value: "1"
+            - name: WOODPECKER_SERVER
+              value: woodpecker-server.woodpecker.svc.cluster.local:9000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            periodSeconds: 20

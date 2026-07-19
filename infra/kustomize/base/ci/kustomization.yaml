@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
   - woodpecker-webhook-poller.yaml
   - woodpecker-github-oauth.yaml
-  - woodpecker-github-writer.yaml
-  - woodpecker-harbor-ci.yaml
+  - woodpecker-general-runtime.yaml
   - woodpecker-release-config.yaml
+  - woodpecker-release-runtime.yaml

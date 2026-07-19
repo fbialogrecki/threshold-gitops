@@ -31,6 +31,10 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: woodpecker
     - server: https://kubernetes.default.svc
+      namespace: woodpecker-jobs
+    - server: https://kubernetes.default.svc
+      namespace: woodpecker-release
+    - server: https://kubernetes.default.svc
       namespace: nats
     - server: https://kubernetes.default.svc
       namespace: default

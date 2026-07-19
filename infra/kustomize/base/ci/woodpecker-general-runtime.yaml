@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: woodpecker-jobs
+  labels:
+    app.kubernetes.io/name: woodpecker-jobs
+    app.kubernetes.io/part-of: threshold
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  # Backend options can only select service accounts inside this namespace.
+  # Shadow the control-plane name with an intentionally unprivileged identity.
+  name: woodpecker-agent
+  namespace: woodpecker-jobs
+  labels:
+    app.kubernetes.io/name: woodpecker-agent-workload
+    app.kubernetes.io/part-of: threshold
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: woodpecker-agent
+  namespace: woodpecker-jobs
+  labels:
+    app.kubernetes.io/name: woodpecker-agent
+    app.kubernetes.io/part-of: threshold
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims", "services", "secrets"]
+    verbs: ["create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["watch", "create", "delete", "get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: woodpecker-agent
+  namespace: woodpecker-jobs
+  labels:
+    app.kubernetes.io/name: woodpecker-agent
+    app.kubernetes.io/part-of: threshold
+subjects:
+  - kind: ServiceAccount
+    name: woodpecker-agent
+    namespace: woodpecker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: woodpecker-agent

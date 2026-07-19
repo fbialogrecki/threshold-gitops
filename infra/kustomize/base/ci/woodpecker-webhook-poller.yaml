@@ -144,12 +144,10 @@ data:
 
 
     def github_latest_commit() -> dict:
-        token = os.environ["GIT_TOKEN"]
         req = urllib.request.Request(
             f"https://api.github.com/repos/{REPO}/commits/{BRANCH}",
             headers={
                 "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {token}",
                 "User-Agent": "threshold-woodpecker-webhook-poller",
                 "X-GitHub-Api-Version": "2022-11-28",
             },
@@ -342,7 +340,7 @@ spec:
           serviceAccountName: woodpecker-webhook-poller
           containers:
             - name: poller
-              image: python:3.13-alpine
+              image: python:3.13-alpine@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0
               imagePullPolicy: IfNotPresent
               command: ["python", "/scripts/poll.py"]
               env:
@@ -358,11 +356,6 @@ spec:
                   value: http://woodpecker-server/api/hook
                 - name: WOODPECKER_SQLITE
                   value: /var/lib/woodpecker/woodpecker.sqlite
-                - name: GIT_TOKEN
-                  valueFrom:
-                    secretKeyRef:
-                      name: woodpecker-github-writer
-                      key: GIT_TOKEN
               volumeMounts:
                 - name: script
                   mountPath: /scripts

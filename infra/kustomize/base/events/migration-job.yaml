@@ -4,7 +4,7 @@ metadata:
   name: events-migrate
   annotations:
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
   labels:
     app.kubernetes.io/name: events
     app.kubernetes.io/component: migration
@@ -24,7 +24,7 @@ spec:
         - name: migrate
           image: threshold/events:dev
           imagePullPolicy: IfNotPresent
-          command: ["uv", "run", "python", "-m", "events.migrate"]
+          command: ["python", "-m", "events.migrate"]
           envFrom:
             - configMapRef:
                 name: events-config

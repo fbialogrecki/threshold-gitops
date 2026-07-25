@@ -1,0 +1,21 @@
+title = "threshold-gitops"
+
+[extend]
+useDefault = true
+
+# External Secrets addresses OpenBao by path, so `key: threshold/...` is a
+# pointer to a value, never the value itself. The default generic-api-key rule
+# reads those paths as credentials. Scoped to the ESO field and to lowercase
+# path syntax so an actual secret parked on the same line still trips the scan.
+[allowlist]
+description = "OpenBao remote keys referenced by External Secrets"
+regexTarget = "match"
+regexes = [
+  '''^key:[ \t]*threshold/[a-z0-9._/-]+$''',
+]
+# Upstream barman-cloud passes its sidecar image name through a Secret; the
+# base64 value decodes to a public ghcr.io reference. The pinned version sits in
+# the filename, so upgrading the plugin puts the new file back under the scan.
+paths = [
+  '''^infra/kustomize/base/platform/barman-cloud-plugin/plugin-barman-cloud\.v0\.12\.0\.yaml$''',
+]

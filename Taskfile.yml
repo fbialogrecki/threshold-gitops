@@ -1,0 +1,93 @@
+# https://taskfile.dev
+version: '3'
+
+# Infra tooling lives with the infra it validates. Privileged operator scripts
+# (backup gates, secret seeding, token rotation) stay in the private ops
+# repository because they touch backups and secret material.
+
+tasks:
+  default:
+    cmds:
+      - task: infra:check
+
+  kustomize:build:
+    desc: Build one overlay (task kustomize:build OVERLAY=web ENV=local) or every overlay under the env when OVERLAY is empty
+    vars:
+      ENV: '{{default "local" .ENV}}'
+      OVERLAY: '{{default "" .OVERLAY}}'
+    cmds:
+      - |
+        build() {
+          if command -v kustomize >/dev/null; then
+            kustomize build "$1"
+          else
+            kubectl kustomize "$1"
+          fi
+        }
+        if [ -n "{{.OVERLAY}}" ]; then
+          build infra/kustomize/overlays/{{.ENV}}/{{.OVERLAY}}
+        else
+          for dir in infra/kustomize/overlays/{{.ENV}}/*/; do
+            [ -f "$dir/kustomization.yaml" ] || continue
+            echo "# --- $dir ---"
+            build "$dir"
+          done
+        fi
+
+  infra:check:
+    desc: Render every kustomization Argo CD reconciles and assert no literal secret was committed
+    cmds:
+      - |
+        set -eu
+        render() {
+          if command -v kustomize >/dev/null; then
+            kustomize build "$1" >/dev/null
+          else
+            kubectl kustomize "$1" >/dev/null
+          fi
+        }
+        failed=0
+        count=0
+        for file in $(find infra/kustomize -name kustomization.yaml | sort); do
+          dir=$(dirname "$file")
+          count=$((count + 1))
+          if ! render "$dir"; then
+            echo "render failed: $dir" >&2
+            failed=$((failed + 1))
+          fi
+        done
+        echo "rendered $count kustomizations, $failed failed"
+        [ "$failed" -eq 0 ]
+      - |
+        python3 - <<'PY'
+        # This repository carries secret *references* for External Secrets, so a
+        # populated data/stringData block means a real value reached git. Only
+        # top-level `kind: Secret` counts; an indented one is an Argo CD
+        # ignoreDifferences entry, not an object.
+        import pathlib, re, sys
+
+        # Upstream barman-cloud ships its sidecar image reference as a Secret;
+        # the value decodes to a public ghcr.io image name, not a credential.
+        ALLOWED = {
+            "infra/kustomize/base/platform/barman-cloud-plugin/plugin-barman-cloud.v0.12.0.yaml",
+        }
+
+        offenders = []
+        for path in sorted(pathlib.Path("infra").rglob("*.yaml")):
+            if path.as_posix() in ALLOWED:
+                continue
+            for doc in path.read_text(encoding="utf-8").split("\n---"):
+                if not re.search(r"^kind:[ \t]*Secret[ \t]*$", doc, re.M):
+                    continue
+                block = re.search(
+                    r"^(data|stringData):[ \t]*$(.*?)(?=^\S|\Z)", doc, re.M | re.S
+                )
+                if block and block.group(2).strip():
+                    offenders.append(f"{path}: inline {block.group(1)} block")
+
+        if offenders:
+            print("\n".join(offenders), file=sys.stderr)
+            print("keep secret values in OpenBao and reference them via ESO", file=sys.stderr)
+            raise SystemExit(1)
+        print("no inline Secret data found")
+        PY

@@ -4,7 +4,7 @@ metadata:
   name: social-migrate
   annotations:
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
   labels:
     app.kubernetes.io/name: social
     app.kubernetes.io/component: migration
@@ -24,7 +24,7 @@ spec:
         - name: migrate
           image: threshold/social:dev
           imagePullPolicy: IfNotPresent
-          command: ["uv", "run", "python", "-m", "social.migrate"]
+          command: ["python", "-m", "social.migrate"]
           envFrom:
             - configMapRef:
                 name: social-config

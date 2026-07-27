@@ -4,7 +4,7 @@ metadata:
   name: media-migrate
   annotations:
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
   labels:
     app.kubernetes.io/name: media
     app.kubernetes.io/component: migration
@@ -36,8 +36,7 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-          workingDir: /app/services/media
-          command: ["uv", "run", "alembic", "upgrade", "head"]
+          command: ["python", "-m", "media.migrate"]
           envFrom:
             - configMapRef:
                 name: media-config
@@ -48,10 +47,6 @@ spec:
           env:
             - name: HOME
               value: /tmp
-            - name: UV_CACHE_DIR
-              value: /tmp/uv-cache
-            - name: UV_NO_SYNC
-              value: "1"
             - name: THRESHOLD_DATABASE_URL
               valueFrom:
                 secretKeyRef:

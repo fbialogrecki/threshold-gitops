@@ -28,7 +28,11 @@ alloy:
       loki.source.file "pod_logs" {
         targets       = local.file_match.pod_logs.targets
         forward_to    = [loki.process.pod_logs.receiver]
-        tail_from_end = true
+        // Migration hook pods finish before Alloy first discovers their log
+        // file, so tailing from the end shipped nothing for them and a failed
+        // migration left no trace once the pod was collected. Only files with
+        // no stored position are affected, so this replays existing logs once.
+        tail_from_end = false
       }
 
       loki.process "pod_logs" {

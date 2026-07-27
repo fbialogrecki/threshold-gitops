@@ -9,4 +9,4 @@ patches:
 images:
   - name: threshold/web
     newName: core.harbor.domain/threshold/web
-    digest: sha256:e497715da35b42c5605f138c2cb43c4fd634190f2239ed52a209801a85f83744
+    digest: sha256:b633a884ea986371163f4eed208cca1522e1218e129cf5861efa294640268417

@@ -322,13 +322,25 @@ metadata:
     app.kubernetes.io/name: woodpecker-webhook-poller
     app.kubernetes.io/part-of: threshold
 spec:
-  # Woodpecker is reachable only at woodpecker.internal on the LAN and the
-  # source repository has no webhook, so GitHub has no way to announce a push.
-  # This CronJob is the only delivery path there is, which is why suspending it
-  # left `.woodpecker/release.yml` unable to fire even after it started
-  # accepting push events. Keep it running until a public webhook endpoint
-  # replaces it, and delete it in the same change that does.
-  suspend: false
+  # Suspended because it does not work, not merely because it is old.
+  #
+  # Woodpecker is published only at woodpecker.internal on the LAN and the
+  # source repository has no webhook, so this CronJob was the only path by
+  # which a push could reach the release pipeline. Resuming it on 2026-07-29
+  # proved why it was retired: it synthesises a GitHub push payload and posts
+  # it to the Woodpecker hook endpoint, which now answers HTTP 400, so every
+  # run fails.
+  #
+  # A second defect waits behind the first. The synthesised payload carries
+  # "commits": [] with empty added/removed/modified, so any workflow using a
+  # `path:` filter with `on_empty: false` — release.yml does — would treat the
+  # push as touching nothing and skip it. Fixing the 400 alone would produce a
+  # poller that reports success and still releases nothing.
+  #
+  # Do not resume this without fixing both. Reaching Woodpecker with a real
+  # forge webhook is the better answer: real payloads carry real file lists,
+  # and the path filters then mean what they say.
+  suspend: true
   schedule: "*/2 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1

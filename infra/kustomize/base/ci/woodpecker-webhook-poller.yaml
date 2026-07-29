@@ -322,7 +322,13 @@ metadata:
     app.kubernetes.io/name: woodpecker-webhook-poller
     app.kubernetes.io/part-of: threshold
 spec:
-  suspend: true
+  # Woodpecker is reachable only at woodpecker.internal on the LAN and the
+  # source repository has no webhook, so GitHub has no way to announce a push.
+  # This CronJob is the only delivery path there is, which is why suspending it
+  # left `.woodpecker/release.yml` unable to fire even after it started
+  # accepting push events. Keep it running until a public webhook endpoint
+  # replaces it, and delete it in the same change that does.
+  suspend: false
   schedule: "*/2 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1

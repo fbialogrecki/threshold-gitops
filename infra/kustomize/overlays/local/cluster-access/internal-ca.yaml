@@ -1,0 +1,44 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: threshold-internal-selfsigned
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: threshold-internal-ca
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  secretName: threshold-internal-ca
+  commonName: Threshold Internal Root CA
+  duration: 87600h
+  renewBefore: 8760h
+  isCA: true
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Never
+  usages:
+    - cert sign
+    - crl sign
+    - digital signature
+  issuerRef:
+    name: threshold-internal-selfsigned
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: threshold-internal-ca
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  ca:
+    secretName: threshold-internal-ca

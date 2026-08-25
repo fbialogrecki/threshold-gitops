@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: threshold
 resources:
   - ../../../base/web
+  - certificate.yaml
   - ingress.yaml
 patches:
   - path: auth-cookie-secure-patch.yaml

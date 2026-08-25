@@ -67,3 +67,6 @@ spec:
       kind: ValidatingWebhookConfiguration
     - group: external-secrets.io
       kind: ClusterSecretStore
+    # cert-manager.io ClusterIssuers (the internal LAN CA) are cluster-scoped.
+    - group: cert-manager.io
+      kind: ClusterIssuer

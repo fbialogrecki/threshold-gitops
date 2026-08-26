@@ -15,6 +15,11 @@ rbac:
     - apiGroups: [""]
       resources: ["pods"]
       verbs: ["watch"]
+    # Narrow kubelet cAdvisor read for the direct https://<node>:10250/metrics/cadvisor
+    # scrape. Resource-specific get only: no nodes/proxy, no list/watch, no wildcards.
+    - apiGroups: [""]
+      resources: ["nodes/metrics"]
+      verbs: ["get"]
 
 alloy:
   resources:
@@ -164,6 +169,78 @@ alloy:
         forward_to      = [prometheus.remote_write.mimir.receiver]
         job_name        = "cnpg"
         scrape_interval = "30s"
+      }
+
+      // ---- Kubelet cAdvisor container memory (added 2026-08-26, OOM lane A2) ----
+      // Direct kubelet TLS scrape with the Alloy service-account token and the
+      // cluster CA. SAN validation is on; no TLS bypass. RBAC grants only
+      // get on nodes/metrics. Cardinality is bounded by metric_relabel_configs
+      // before remote write: namespace=threshold, container=web, five incident
+      // memory/OOM metric names, labels reduced to the join set.
+      discovery.kubernetes "nodes" {
+        role = "node"
+      }
+
+      discovery.relabel "cadvisor" {
+        targets = discovery.kubernetes.nodes.targets
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+        rule {
+          source_labels = ["__address__"]
+          regex         = "([^:]+):\\d+"
+          replacement   = "${1}:10250"
+          target_label  = "__address__"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          replacement   = "$1"
+          target_label  = "__metrics_path__"
+        }
+      }
+
+      prometheus.scrape "cadvisor" {
+        targets         = discovery.relabel.cadvisor.output
+        forward_to      = [prometheus.relabel.cadvisor_allowlist.receiver]
+        job_name        = "kubelet-cadvisor"
+        scheme          = "https"
+        metrics_path    = "/metrics/cadvisor"
+        scrape_interval = "30s"
+
+        authorization {
+          type            = "Bearer"
+          credentials_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        }
+
+        tls_config {
+          ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        }
+      }
+
+      prometheus.relabel "cadvisor_allowlist" {
+        forward_to = [prometheus.remote_write.mimir.receiver]
+
+        rule {
+          source_labels = ["namespace"]
+          regex         = "threshold"
+          action        = "keep"
+        }
+        rule {
+          source_labels = ["container"]
+          regex         = "web"
+          action        = "keep"
+        }
+        rule {
+          source_labels = ["__name__"]
+          regex         = "container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_memory_usage_bytes|container_oom_events_total"
+          action        = "keep"
+        }
+        rule {
+          labelkeep = true
+          regex     = "__name__|namespace|pod|container|node|job|instance"
+          action    = "labelkeep"
+        }
       }
 
       prometheus.remote_write "mimir" {

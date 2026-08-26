@@ -237,9 +237,8 @@ alloy:
           action        = "keep"
         }
         rule {
-          labelkeep = true
-          regex     = "__name__|namespace|pod|container|node|job|instance"
-          action    = "labelkeep"
+          regex  = "__name__|namespace|pod|container|node|job|instance"
+          action = "labelkeep"
         }
       }
 

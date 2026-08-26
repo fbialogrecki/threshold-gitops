@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-internal-tls
+  namespace: default
+spec:
+  secretName: openbao-internal-tls
+  commonName: openbao.internal
+  dnsNames:
+    - openbao.internal
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  usages:
+    - server auth
+  issuerRef:
+    name: threshold-internal-ca
+    kind: ClusterIssuer

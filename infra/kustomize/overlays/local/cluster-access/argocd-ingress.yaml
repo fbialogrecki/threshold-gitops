@@ -7,9 +7,14 @@ metadata:
     app.kubernetes.io/name: argocd-server
     app.kubernetes.io/part-of: threshold
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: argocd-https-redirect@kubernetescrd
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - argocd.internal
+      secretName: argocd-internal-tls
   rules:
     - host: argocd.internal
       http:

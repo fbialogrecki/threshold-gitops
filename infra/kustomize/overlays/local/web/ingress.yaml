@@ -6,8 +6,14 @@ metadata:
     app.kubernetes.io/name: web
     app.kubernetes.io/component: frontend
     app.kubernetes.io/part-of: threshold
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - threshold.internal
+      secretName: threshold-internal-tls
   rules:
     - host: threshold.internal
       http:

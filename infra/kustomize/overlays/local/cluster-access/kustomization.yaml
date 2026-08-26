@@ -4,7 +4,10 @@ resources:
   - internal-ca.yaml
   - authentik-certificate.yaml
   - argocd-certificate.yaml
+  - openbao-certificate.yaml
   - argocd-ingress.yaml
+  - openbao-ingress.yaml
+  - https-redirect-middlewares.yaml
   - argocd-cm-oidc.yaml
   - argocd-rbac-cm-sso.yaml
   - argocd-oidc-external-secret.yaml

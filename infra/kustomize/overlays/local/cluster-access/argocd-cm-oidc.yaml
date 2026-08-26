@@ -8,10 +8,10 @@ metadata:
     app.kubernetes.io/part-of: argocd
     app.kubernetes.io/component: server
 data:
-  url: http://argocd.internal
+  url: https://argocd.internal
   oidc.config: |
     name: Authentik
-    issuer: http://authentik.internal/application/o/threshold-argocd/
+    issuer: https://authentik.internal/application/o/threshold-argocd/
     clientID: threshold-argocd
     clientSecret: $oidc.authentik.clientSecret
     requestedScopes: ["openid", "profile", "email"]

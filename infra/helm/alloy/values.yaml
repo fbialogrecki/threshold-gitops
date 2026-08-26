@@ -15,8 +15,13 @@ rbac:
     - apiGroups: [""]
       resources: ["pods"]
       verbs: ["watch"]
-    # Narrow kubelet cAdvisor read for the direct https://<node>:10250/metrics/cadvisor
-    # scrape. Resource-specific get only: no nodes/proxy, no list/watch, no wildcards.
+    # Narrow kubelet cAdvisor support for the direct https://<node>:10250/metrics/cadvisor
+    # scrape. list/watch nodes is required only so Alloy discovery.kubernetes role=node
+    # can resolve node addresses; get on nodes/metrics authorizes the cAdvisor endpoint.
+    # No nodes/proxy and no wildcard node access.
+    - apiGroups: [""]
+      resources: ["nodes"]
+      verbs: ["list", "watch"]
     - apiGroups: [""]
       resources: ["nodes/metrics"]
       verbs: ["get"]

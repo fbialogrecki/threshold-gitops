@@ -6,6 +6,7 @@ resources:
   - argocd-certificate.yaml
   - openbao-certificate.yaml
   - argocd-ingress.yaml
+  - authentik-ingress.yaml
   - openbao-ingress.yaml
   - https-redirect-middlewares.yaml
   - argocd-cm-oidc.yaml

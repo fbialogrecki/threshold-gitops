@@ -14,6 +14,18 @@ data:
     issuer: https://authentik.internal/application/o/threshold-argocd/
     clientID: threshold-argocd
     clientSecret: $oidc.authentik.clientSecret
+    rootCA: |
+      -----BEGIN CERTIFICATE-----
+      MIIBjjCCATSgAwIBAgIUEfniLx6KmUFEBy4DIWtsVsfcz1UwCgYIKoZIzj0EAwIw
+      JTEjMCEGA1UEAxMaVGhyZXNob2xkIEludGVybmFsIFJvb3QgQ0EwHhcNMjYwODI1
+      MDg0NzQzWhcNMzYwODIyMDg0NzQzWjAlMSMwIQYDVQQDExpUaHJlc2hvbGQgSW50
+      ZXJuYWwgUm9vdCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABHp+FpU8JZ61
+      ggurgvVI+fYC0M9jPlcZc/v95l5fX9DHKHPUW3H2Nv91oc0Wb+NIa3v9AN+ohO2B
+      U4C4+4KBHQGjQjBAMA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8EBTADAQH/MB0G
+      A1UdDgQWBBR3QCCyEC0cVZBdh3bR/LfBUPRzezAKBggqhkjOPQQDAgNIADBFAiEA
+      wSyK3scvbRMvzSfQsf/xLuf3rDKF8LJxH+MvadzIuwQCIAU0M2sGFfcUEs9Cw/Mj
+      kVcSPZ1ugvmfFpRA9q9V473k
+      -----END CERTIFICATE-----
     requestedScopes: ["openid", "profile", "email"]
     requestedIDTokenClaims:
       groups:

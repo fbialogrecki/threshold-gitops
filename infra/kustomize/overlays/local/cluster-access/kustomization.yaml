@@ -8,6 +8,7 @@ resources:
   - argocd-ingress.yaml
   - authentik-ingress.yaml
   - openbao-ingress.yaml
+  - openbao-authentik-forward-auth-middleware.yaml
   - https-redirect-middlewares.yaml
   - argocd-cm-oidc.yaml
   - argocd-rbac-cm-sso.yaml

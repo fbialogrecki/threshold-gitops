@@ -7,6 +7,6 @@ spec:
   target:
     template:
       data:
-        AUTH_COOKIE_SECURE: "false"
-        WEB_TRUSTED_LAN_HTTP: "true"
+        AUTH_COOKIE_SECURE: "true"
+        WEB_TRUSTED_LAN_HTTP: "false"
         WEB_TRUSTED_PROXY_DEPTH: "1"

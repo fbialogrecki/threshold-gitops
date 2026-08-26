@@ -7,10 +7,14 @@ metadata:
     app.kubernetes.io/name: openbao
     app.kubernetes.io/part-of: threshold
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
-    traefik.ingress.kubernetes.io/router.middlewares: default-authentik-forward-auth@kubernetescrd
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: default-https-redirect@kubernetescrd,default-authentik-forward-auth@kubernetescrd
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - openbao.internal
+      secretName: openbao-internal-tls
   rules:
     - host: openbao.internal
       http:

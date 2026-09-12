@@ -19,6 +19,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: users
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: events
       ports:
         - protocol: TCP
           port: 8000

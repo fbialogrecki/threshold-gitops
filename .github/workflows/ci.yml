@@ -40,7 +40,24 @@ jobs:
             --output "/tmp/${archive}"
           echo "${KUSTOMIZE_SHA256}  /tmp/${archive}" | sha256sum --check --strict
           tar -xzf "/tmp/${archive}" -C /usr/local/bin kustomize
-      - name: Render every kustomization and reject inline secrets
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.13.7'
+      - name: Install checker dependencies
+        run: |
+          python3 -m pip install --require-hashes --only-binary=:all: -r ci/requirements.txt
+      - name: Install Helm
+        env:
+          HELM_VERSION: 3.19.4
+          HELM_SHA256: 759c656fbd9c11e6a47784ecbeac6ad1eb16a9e76d202e51163ab78504848862
+        run: |
+          archive="helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+          curl --fail --silent --show-error --location \
+            "https://get.helm.sh/${archive}" --output "/tmp/${archive}"
+          echo "${HELM_SHA256}  /tmp/${archive}" | sha256sum --check --strict
+          tar -xzf "/tmp/${archive}" -C /tmp linux-amd64/helm
+          install -m 0755 /tmp/linux-amd64/helm /usr/local/bin/helm
+      - name: Test and render Helm and Kustomize; reject inline secrets
         run: task infra:check
 
   security:

@@ -34,8 +34,18 @@ tasks:
           done
         fi
 
+  helm:check:
+    desc: Test and render all declared Helm Applications (Helm 3.19.4 and CI requirements required)
+    env:
+      HELM_BIN: '{{default "helm" .HELM_BIN}}'
+      PYTHONDONTWRITEBYTECODE: '1'
+    cmds:
+      - python3 ci/run_helm_tests.py
+      - python3 ci/helm_checks.py --helm "$HELM_BIN"
+
   infra:check:
-    desc: Render every kustomization Argo CD reconciles and assert no literal secret was committed
+    desc: Render every Helm Application and kustomization; reject inline secrets
+    deps: [helm:check]
     cmds:
       - |
         set -eu

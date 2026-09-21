@@ -1,0 +1,5 @@
+# Generic offline compatibility target; NOT live cluster discovery.
+# No private CRD inventory or credentials. Helm is independently fixed in code.
+helmVersion: v3.19.4
+kubeVersion: 1.34.0
+apiVersions: []

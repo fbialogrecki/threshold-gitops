@@ -72,9 +72,10 @@ alerting:
           datasourceUid: PAE45454D0EDB9216
           model:
             editorMode: code
-            expr: sum(rate(threshold_http_server_errors_total{service_name=~"auth-gateway|events|media|social|users"}[5m]))
-              / clamp_min(sum(rate(threshold_http_server_requests_total{service_name=~"auth-gateway|events|media|social|users"}[5m])),
-              0.001)
+            expr: >-
+              (sum by (service_name) (rate(threshold_http_server_requests_total{service_name=~"auth-gateway|events|media|social|users",http_route!~"/health|/healthz|/readyz|/ready|/metrics|/docs|/openapi\\.json|/redoc",http_response_status_class="5xx"}[5m]))
+              or 0 * sum by (service_name) (rate(threshold_http_server_requests_total{service_name=~"auth-gateway|events|media|social|users",http_route!~"/health|/healthz|/readyz|/ready|/metrics|/docs|/openapi\\.json|/redoc"}[5m])))
+              / (sum by (service_name) (rate(threshold_http_server_requests_total{service_name=~"auth-gateway|events|media|social|users",http_route!~"/health|/healthz|/readyz|/ready|/metrics|/docs|/openapi\\.json|/redoc"}[5m])) > 0)
             instant: true
             intervalMs: 1000
             maxDataPoints: 43200
@@ -110,7 +111,7 @@ alerting:
         labels:
           severity: warning
         annotations:
-          summary: Threshold service p95 HTTP latency exceeds one second.
+          summary: Threshold service p95 product HTTP latency exceeds one second.
         noDataState: OK
         execErrState: Error
         data:
@@ -121,7 +122,8 @@ alerting:
           datasourceUid: PAE45454D0EDB9216
           model:
             editorMode: code
-            expr: histogram_quantile(0.95, sum by (le) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~"auth-gateway|events|media|social|users"}[5m])))
+            expr: >-
+              histogram_quantile(0.95, sum by (le, service_name) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~"auth-gateway|events|media|social|users",http_route!~"/health|/healthz|/readyz|/ready|/metrics|/docs|/openapi\\.json|/redoc"}[5m])))
             instant: true
             intervalMs: 1000
             maxDataPoints: 43200

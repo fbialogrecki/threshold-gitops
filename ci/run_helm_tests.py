@@ -7,7 +7,7 @@ import unittest
 os.environ.setdefault('HELM_BIN', 'helm')
 root = Path(__file__).resolve().parent
 loader = unittest.TestLoader()
-for name in ('test_helm_checks', 'test_ci_contract'):
+for name in ('test_helm_checks', 'test_ci_contract', 'test_alert_contract'):
     if not (root / (name + '.py')).is_file():
         sys.exit('required test module missing: ' + name)
     suite = loader.loadTestsFromName(name)

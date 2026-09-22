@@ -57,6 +57,18 @@ jobs:
           echo "${HELM_SHA256}  /tmp/${archive}" | sha256sum --check --strict
           tar -xzf "/tmp/${archive}" -C /tmp linux-amd64/helm
           install -m 0755 /tmp/linux-amd64/helm /usr/local/bin/helm
+      - name: Install promtool
+        env:
+          PROMETHEUS_VERSION: 3.5.5
+          PROMETHEUS_SHA256: 64d0beab873272b861a91df41668bc852c7e2e5b23f75c16059fb15b5630c577
+        run: |
+          archive="prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz"
+          curl --fail --silent --show-error --location \
+            "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/${archive}" \
+            --output "/tmp/${archive}"
+          echo "${PROMETHEUS_SHA256}  /tmp/${archive}" | sha256sum --check --strict
+          tar -xzf "/tmp/${archive}" -C /tmp "prometheus-${PROMETHEUS_VERSION}.linux-amd64/promtool"
+          install -m 0755 "/tmp/prometheus-${PROMETHEUS_VERSION}.linux-amd64/promtool" /usr/local/bin/promtool
       - name: Test and render Helm and Kustomize; reject inline secrets
         run: task infra:check
 

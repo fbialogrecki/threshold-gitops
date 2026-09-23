@@ -72,9 +72,10 @@ alerting:
           datasourceUid: PAE45454D0EDB9216
           model:
             editorMode: code
-            expr: sum(rate(threshold_http_server_errors_total{service_name=~"auth-gateway|events|media|social|users"}[5m]))
-              / clamp_min(sum(rate(threshold_http_server_requests_total{service_name=~"auth-gateway|events|media|social|users"}[5m])),
-              0.001)
+            # Per service, excluding probe/doc routes, so a busy healthy service cannot hide a failing one.
+            expr: >-
+              sum by (service_name) (rate(threshold_http_server_errors_total{service_name=~"auth-gateway|events|media|social|users",http_route!~"/health|/healthz|/readyz|/ready|/metrics|/docs|/openapi\\.json|/redoc"}[5m]))
+              / (sum by (service_name) (rate(threshold_http_server_requests_total{service_name=~"auth-gateway|events|media|social|users",http_route!~"/health|/healthz|/readyz|/ready|/metrics|/docs|/openapi\\.json|/redoc"}[5m])) > 0)
             instant: true
             intervalMs: 1000
             maxDataPoints: 43200
@@ -121,7 +122,8 @@ alerting:
           datasourceUid: PAE45454D0EDB9216
           model:
             editorMode: code
-            expr: histogram_quantile(0.95, sum by (le) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~"auth-gateway|events|media|social|users"}[5m])))
+            expr: >-
+              histogram_quantile(0.95, sum by (le, service_name) (rate(threshold_http_server_request_duration_seconds_bucket{service_name=~"auth-gateway|events|media|social|users",http_route!~"/health|/healthz|/readyz|/ready|/metrics|/docs|/openapi\\.json|/redoc"}[5m])))
             instant: true
             intervalMs: 1000
             maxDataPoints: 43200

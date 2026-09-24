@@ -11,6 +11,8 @@ data:
   THRESHOLD_NATS_ENABLED: "true"
   THRESHOLD_NATS_URL: nats://nats.nats.svc.cluster.local:4222
   THRESHOLD_USERS_LIST_FOLLOWING_SUBJECT: users.follow.list_following.v1
+  # social -> users HTTP: notifications, mention lookup and block reconciliation.
+  USERS_SERVICE_URL: http://users.threshold.svc.cluster.local
   OTEL_SERVICE_NAME: social
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability.svc.cluster.local:4317
   OTEL_EXPORTER_OTLP_PROTOCOL: grpc

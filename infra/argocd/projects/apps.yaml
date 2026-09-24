@@ -13,6 +13,7 @@ spec:
     databases, secrets, and network policies. Namespaced resources only.
   sourceRepos:
     - git@github.com:fbialogrecki/threshold-gitops.git
+    - https://github.com/fbialogrecki/threshold.git
   destinations:
     - server: https://kubernetes.default.svc
       namespace: threshold

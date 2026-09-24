@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: users-ingress-from-services
+  labels:
+    app.kubernetes.io/name: users
+    app.kubernetes.io/part-of: threshold
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: users
+  policyTypes:
+    - Ingress
+  ingress:
+    # auth-gateway reaches users over NATS, not HTTP, so it is not listed.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: web
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: social
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: events
+      ports:
+        - protocol: TCP
+          port: 8000

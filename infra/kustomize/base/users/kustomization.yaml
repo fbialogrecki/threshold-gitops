@@ -12,3 +12,4 @@ resources:
   - migration-job.yaml
   - deployment.yaml
   - service.yaml
+  - networkpolicy.yaml

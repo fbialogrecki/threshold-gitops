@@ -7,7 +7,7 @@ resources:
 images:
   - name: threshold/auth-gateway
     newName: core.harbor.domain/threshold/auth-gateway
-    digest: sha256:4939f8654d1c71da6650c8f7a19b4bc5d7926c9d66523438e6af61adfee4e522
+    digest: sha256:ed287492c3ee262bd887220094e7c5f46b8f3256c68e526b7db7e99b39d13ada
 patches:
   - target:
       kind: ConfigMap

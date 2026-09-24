@@ -6,7 +6,7 @@ resources:
 images:
   - name: threshold/social
     newName: core.harbor.domain/threshold/social
-    digest: sha256:83022edf41c76975713285321167309c5d1474408bbb91c7be4cc0088558bf08
+    digest: sha256:1ea52c010c1fbf3b5c9d05571256d5624d321c624cb556bd3ce5afa0c0183ed9
 patches:
   - target:
       kind: ConfigMap

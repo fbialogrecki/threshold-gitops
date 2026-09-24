@@ -35,6 +35,11 @@ spec:
     customQueriesConfigMap:
       - name: cnpg-default-monitoring
         key: queries
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: media-postgres-backup-store
   postgresql:
     parameters:
       wal_level: logical
